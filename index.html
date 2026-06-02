@@ -1,2339 +1,450 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>ABYSS WALKER — ULTRA VFX EDITION</title>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#05070b" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>용원고등학교: 그림자 사건 MOBILE</title>
+<link rel="manifest" href="./manifest.webmanifest" />
 <style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
   html, body {
     margin: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #03050a;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
+    overscroll-behavior: none;
+    background: #05070b;
+    color: #eaf2ff;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    touch-action: none;
   }
-  #game {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+
   canvas {
-    display: block;
-    image-rendering: auto;
-    filter: saturate(1.22) contrast(1.08) brightness(1.04);
-  }
-  .dom-layer {
     position: fixed;
     inset: 0;
-    z-index: 50;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at center, rgba(0, 255, 213, 0.08), rgba(0,0,0,0.88) 55%);
-    backdrop-filter: blur(3px);
-    pointer-events: auto;
+    width: 100vw;
+    height: 100vh;
+    background: #05070b;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    touch-action: none;
   }
-  .panel {
-    width: min(940px, calc(100vw - 28px));
-    padding: 22px;
-    border: 1px solid rgba(0, 255, 213, 0.32);
-    border-radius: 24px;
-    background: linear-gradient(180deg, rgba(8, 15, 24, 0.96), rgba(5, 7, 12, 0.98));
-    box-shadow: 0 0 34px rgba(0, 255, 213, 0.18), inset 0 0 24px rgba(255,255,255,0.03);
-    color: white;
+
+  .hud {
+    position: fixed;
+    left: max(8px, env(safe-area-inset-left));
+    top: max(8px, env(safe-area-inset-top));
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
   }
-  .title {
-    margin: 0;
-    text-align: center;
-    font-size: clamp(34px, 8vw, 76px);
-    letter-spacing: 12px;
-    color: #00ffd5;
-    text-shadow: 0 0 22px rgba(0,255,213,0.75);
+
+  .topRight {
+    position: fixed;
+    right: max(8px, env(safe-area-inset-right));
+    top: max(8px, env(safe-area-inset-top));
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    pointer-events: none;
+  }
+
+  .box {
+    background: rgba(9, 13, 20, .88);
+    border: 2px solid #000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.15), 0 2px 0 rgba(0,0,0,.55);
+    border-radius: 8px;
+    padding: 6px 8px;
     font-weight: 900;
+    font-size: 12px;
+    line-height: 1.25;
+    text-shadow: 1px 1px 0 #000;
+    white-space: pre-line;
   }
-  .subtitle {
-    text-align: center;
-    color: #9ab8c8;
-    margin: 8px 0 10px;
-    letter-spacing: 2px;
-    font-size: 13px;
+
+  .objective {
+    width: min(46vw, 360px);
   }
-  .sponsor {
-    text-align: center;
-    color: #ffdd66;
-    margin: 0 0 18px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-shadow: 0 0 12px rgba(255, 221, 102, 0.45);
-    font-size: 14px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  .choices {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-  .card {
-    appearance: none;
-    border: 1px solid rgba(129, 231, 255, 0.28);
-    border-radius: 18px;
-    padding: 16px 14px;
-    min-height: 110px;
-    color: white;
-    background: linear-gradient(180deg, rgba(16, 27, 42, 0.95), rgba(8, 12, 22, 0.98));
-    box-shadow: inset 0 0 18px rgba(255,255,255,0.03), 0 0 18px rgba(0, 0, 0, 0.35);
-    text-align: left;
-    cursor: pointer;
-    pointer-events: auto;
-  }
-  .card:active {
-    transform: scale(0.98);
-  }
-  .card.selected, .card:hover {
-    border-color: rgba(0,255,213,0.95);
-    box-shadow: 0 0 24px rgba(0,255,213,0.22), inset 0 0 20px rgba(0,255,213,0.08);
-  }
-  .card.fusion {
-    border-color: rgba(255, 221, 102, 0.7);
-    background: linear-gradient(180deg, rgba(43, 24, 56, 0.96), rgba(13, 10, 18, 0.98));
-  }
-  .card .name {
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    margin-bottom: 7px;
-  }
-  .card .tag {
-    display: inline-block;
-    margin-bottom: 9px;
-    padding: 3px 8px;
+
+  .hpOuter {
+    width: 168px;
+    height: 17px;
+    background: rgba(0,0,0,.74);
+    border: 2px solid #000;
     border-radius: 999px;
-    background: rgba(0,255,213,0.1);
-    color: #00ffd5;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+  }
+
+  .hpInner {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #75ff9e, #e6ff77);
+    transition: width .12s linear;
+  }
+
+  .moveZone {
+    position: fixed;
+    left: max(18px, env(safe-area-inset-left));
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: 9;
+    width: 148px;
+    height: 148px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.18);
+    background: radial-gradient(circle, rgba(255,255,255,.08), rgba(0,0,0,.18));
+    box-shadow: inset 0 0 30px rgba(107,211,255,.08), 0 0 0 2px rgba(0,0,0,.22);
+    pointer-events: none;
+  }
+
+  .moveZone::before {
+    content: "이동";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,.48);
+    font-size: 15px;
+    font-weight: 1000;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .controls {
+    position: fixed;
+    right: max(10px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 12;
+    display: grid;
+    grid-template-columns: 82px 82px;
+    gap: 9px;
+  }
+
+  button {
+    font: inherit;
+    touch-action: manipulation;
+  }
+
+  .btn {
+    height: 68px;
+    border: 2px solid #000;
+    border-radius: 13px;
+    background: linear-gradient(180deg, #7d8cbf, #4e5a84);
+    color: white;
+    font-weight: 1000;
+    text-shadow: 1px 1px 0 #000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 3px 0 rgba(0,0,0,.65);
+  }
+
+  .btn:active, .btn.isDown {
+    transform: translateY(2px);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), 0 1px 0 rgba(0,0,0,.65);
+    filter: brightness(1.1);
+  }
+
+  .attackBtn {
+    background: linear-gradient(180deg, #ff8676, #aa4455);
+  }
+
+  .btn small {
+    display: block;
     font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-  .card.fusion .tag {
-    background: rgba(255,221,102,0.12);
-    color: #ffdd66;
-  }
-  .card .desc {
-    font-size: 12px;
-    line-height: 1.45;
-    color: #b8c8d8;
-  }
-  .start {
-    width: min(320px, 100%);
-    margin: 18px auto 0;
-    display: block;
-    padding: 16px 18px;
-    border-radius: 16px;
-    border: 1px solid rgba(0,255,213,0.9);
-    background: rgba(0,255,213,0.12);
-    color: #00ffd5;
-    font-weight: 900;
-    letter-spacing: 5px;
-    cursor: pointer;
-  }
-  .small {
-    margin-top: 12px;
-    color: #718491;
-    text-align: center;
-    font-size: 12px;
+    opacity: .88;
+    margin-top: 2px;
   }
 
-
-  .avatar-box {
-    margin-top: 14px;
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(0,255,213,.26);
-    background: rgba(4,16,24,.68);
-  }
-  .avatar-title {
-    font-size: 13px;
-    color: #d6f5ff;
-    font-weight: 800;
-    margin-bottom: 10px;
-    letter-spacing: .6px;
-  }
-  .avatar-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .upload-btn {
-    min-width: 132px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 11px 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(0,255,213,.6);
-    background: rgba(0,255,213,.10);
-    color: #aefdf2;
-    font-size: 13px;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .upload-btn.secondary {
-    border-color: rgba(255,255,255,.18);
-    background: rgba(255,255,255,.06);
-    color: #d5dce4;
-  }
-  .upload-btn input { display:none; }
-  .avatar-preview-wrap {
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    justify-content: center;
-    min-height: 82px;
-  }
-  .avatar-preview {
-    width: 72px;
-    height: 72px;
-    border-radius: 14px;
-    border: 1px solid rgba(0,255,213,.35);
-    background: rgba(255,255,255,.04);
-    object-fit: contain;
-    image-rendering: pixelated;
+  .joystick {
+    position: fixed;
+    z-index: 11;
+    width: 126px;
+    height: 126px;
+    margin-left: -63px;
+    margin-top: -63px;
     display: none;
-    box-shadow: 0 0 20px rgba(0,255,213,.18);
-  }
-  .avatar-preview.show {
-    display: block;
-  }
-  .avatar-hint {
-    max-width: 320px;
-    text-align: left;
-    color: #90a6b5;
-    font-size: 12px;
-    line-height: 1.45;
+    pointer-events: none;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.38);
+    background: radial-gradient(circle, rgba(255,255,255,.12), rgba(0,0,0,.38));
+    box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 0 24px rgba(105,201,255,.24);
   }
 
-  .asset-icon {
-    width: 46px;
-    height: 46px;
-    image-rendering: pixelated;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto 8px;
-    filter: drop-shadow(0 0 8px rgba(255,255,255,.28));
+  .stick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 58px;
+    height: 58px;
+    margin-left: -29px;
+    margin-top: -29px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f7fdff, #61d6ff);
+    box-shadow: 0 0 0 3px rgba(0,0,0,.35);
   }
-  .fallback-loading {
-    color: #8fa6b6;
-    text-align: center;
+
+  .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: rgba(0,0,0,.68);
+    backdrop-filter: blur(4px);
+    touch-action: manipulation;
+  }
+
+  .card {
+    width: min(760px, 96vw);
+    max-height: 90vh;
+    overflow: hidden;
+    background: #172033;
+    border: 3px solid #000;
+    box-shadow: inset 0 0 0 3px #657499, 0 18px 60px rgba(0,0,0,.55);
+    border-radius: 14px;
     padding: 18px;
-    border: 1px dashed rgba(0,255,213,.28);
-    border-radius: 14px;
+    touch-action: manipulation;
   }
-  .error-box {
-    margin-top: 12px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,80,100,.55);
-    background: rgba(120,0,0,.18);
-    color: #ffb8c0;
-    font-size: 12px;
-    line-height: 1.45;
+
+  h1 {
+    margin: 0 0 10px;
+    font-size: clamp(27px, 6.4vw, 44px);
+    line-height: 1.05;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  p {
+    margin: 8px 0;
+    color: #dce6fb;
+    line-height: 1.55;
+  }
+
+  .mobileTip {
+    border: 2px solid #000;
+    background: rgba(97, 214, 255, .12);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-weight: 900;
+  }
+
+  .wideBtn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 14px 16px;
+    height: auto;
+    font-size: 18px;
+  }
+
+  .dialogPanel {
+    position: fixed;
+    left: 50%;
+    bottom: calc(100px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 28;
+    width: min(94vw, 680px);
     display: none;
   }
 
-  @media (max-width: 720px) {
-    .panel {
-      padding: 16px;
-      border-radius: 18px;
-    }
-    .grid, .choices {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    .choices .card {
-      min-height: 92px;
-      padding: 13px 14px;
-    }
-    .card .name {
-      font-size: 17px;
-    }
-    .title {
-      letter-spacing: 8px;
-    }
+  .dialogBox {
+    background: rgba(14, 20, 32, .96);
+    border: 3px solid #000;
+    box-shadow: inset 0 0 0 3px #64759d, 0 12px 34px rgba(0,0,0,.55);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .dialogName {
+    display: inline-block;
+    min-width: 120px;
+    background: #2c3b5d;
+    border: 2px solid #000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.14);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-weight: 1000;
+    color: #bdeeff;
+    text-shadow: 1px 1px 0 #000;
+    margin-bottom: 8px;
+  }
+
+  .dialogText {
+    min-height: 58px;
+    white-space: pre-line;
+    line-height: 1.5;
+    font-weight: 750;
+    color: #eef5ff;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .dialogFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    color: #bfcce3;
+    font-size: 12px;
+  }
+
+  .dialogFooter .btn {
+    width: 118px;
+    height: 46px;
+  }
+
+  .toastWrap {
+    position: fixed;
+    left: 50%;
+    bottom: calc(94px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 16;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+    width: min(92vw, 520px);
+    align-items: center;
+  }
+
+  .toast {
+    background: rgba(9, 13, 20, .9);
+    border: 2px solid #000;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 2px 0 rgba(0,0,0,.55);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 900;
+    font-size: 13px;
+    text-shadow: 1px 1px 0 #000;
+    animation: fade 2.2s forwards;
+    text-align: center;
+  }
+
+  .rotateNotice {
+    position: fixed;
+    left: 50%;
+    top: max(10px, env(safe-area-inset-top));
+    transform: translateX(-50%);
+    z-index: 18;
+    display: none;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 2px solid #000;
+    background: rgba(10,15,24,.86);
+    color: #ffffff;
+    font-weight: 1000;
+    font-size: 12px;
+    text-shadow: 1px 1px 0 #000;
+    pointer-events: none;
+  }
+
+  @keyframes fade {
+    0% { opacity: 0; transform: translateY(8px); }
+    12%, 78% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
+  @media (orientation: portrait) {
+    .rotateNotice { display: block; }
+    .objective { display: none; }
+    .hud { transform: scale(.92); transform-origin: left top; }
+    .moveZone { width: 126px; height: 126px; opacity: .72; }
+    .controls { grid-template-columns: 76px 76px; gap: 7px; }
+    .btn { height: 62px; font-size: 13px; }
+    .dialogPanel { bottom: calc(140px + env(safe-area-inset-bottom)); }
+  }
+
+  @media (max-width: 700px) and (orientation: landscape) {
+    .box { font-size: 11px; padding: 5px 7px; }
+    .objective { width: min(43vw, 320px); }
+    .controls { grid-template-columns: 78px 78px; gap: 7px; }
+    .btn { height: 60px; font-size: 13px; }
+    .moveZone { width: 128px; height: 128px; opacity: .8; }
+    .dialogPanel { bottom: calc(86px + env(safe-area-inset-bottom)); }
   }
 </style>
 </head>
 <body>
-<div id="game"></div>
+<canvas id="screen"></canvas>
 
-<div id="startLayer" class="dom-layer" style="display:flex">
-  <div class="panel">
-    <h1 class="title">ABYSS</h1>
-    <div class="subtitle">ULTRA VFX EDITION · 화려한 이펙트 · 렙업 광역기 추가</div>
-    <div class="sponsor">후원자 한상신님 감사합니다 · V10 몹 체력 감소</div>
-    <div id="difficultyGrid" class="grid"><div class="fallback-loading">게임 UI 불러오는 중...</div></div>
-    <div class="avatar-box">
-      <div class="avatar-title">플레이어 사진 업로드 · 자동 픽셀화</div>
-      <div class="avatar-row">
-        <label class="upload-btn">사진 선택<input id="playerPhotoInput" type="file" accept="image/*"></label>
-        <button id="avatarResetButton" type="button" class="upload-btn secondary">기본 캐릭터 사용</button>
-      </div>
-      <div class="avatar-preview-wrap">
-        <img id="avatarPreview" class="avatar-preview" alt="player preview">
-        <div id="avatarHint" class="avatar-hint">사진을 넣으면 중앙 기준으로 잘라서 자동 픽셀화하고, 그 이미지를 플레이어 캐릭터로 사용합니다.</div>
-      </div>
+<div class="hud">
+  <div class="box" id="mapName">구역: -</div>
+  <div class="box" id="combatInfo">전투: -</div>
+  <div class="hpOuter"><div class="hpInner" id="hpInner"></div></div>
+  <div class="box" id="nearInfo">근처: -</div>
+</div>
+
+<div class="topRight">
+  <div class="box objective" id="objectiveBox">현재 미션: -</div>
+</div>
+
+<div class="moveZone" aria-hidden="true"></div>
+
+<div class="controls">
+  <button class="btn attackBtn" id="btnAttack">공격<small>터치</small></button>
+  <button class="btn" id="btnDash">대시<small>터치</small></button>
+  <button class="btn" id="btnTalk">상호작용<small>대화/이동</small></button>
+  <button class="btn" id="btnReset">리셋<small>재시작</small></button>
+</div>
+
+<div class="joystick" id="joy">
+  <div class="stick" id="stick"></div>
+</div>
+
+<div class="toastWrap" id="toastWrap"></div>
+<div class="rotateNotice">가로모드 권장 · 시작 시 전체화면 전환</div>
+
+<div class="dialogPanel" id="dialogPanel">
+  <div class="dialogBox">
+    <div class="dialogName" id="dialogName">이름</div>
+    <div class="dialogText" id="dialogText"></div>
+    <div class="dialogFooter">
+      <span id="dialogCounter">1/1</span>
+      <button class="btn" id="dialogNextBtn">다음</button>
     </div>
-    <div id="bootError" class="error-box"></div>
-    <button id="startButton" class="start">START</button>
-    <div class="small">WASD / 방향키 / 왼쪽 화면 조이스틱 이동 · 공격은 자동<br>Character/monster sprites: Kenney Tiny Dungeon CC0</div>
   </div>
 </div>
 
-<div id="choiceLayer" class="dom-layer">
-  <div class="panel">
-    <h1 id="choiceTitle" class="title" style="font-size:clamp(28px,6vw,54px)">LEVEL UP</h1>
-    <div class="subtitle">카드 아무 곳이나 누르면 선택됨</div>
-    <div id="choiceGrid" class="choices"></div>
+<div class="panel" id="startPanel">
+  <div class="card">
+    <h1>용원고등학교: 그림자 사건<br>MOBILE</h1>
+    <p class="mobileTip"><b>모바일 최적화판:</b> 폰 브라우저/Netlify/GitHub Pages에서 바로 실행 가능. 시작하면 전체화면을 시도하고, 가로모드에서 가장 잘 보입니다.</p>
+    <p><b>조작:</b> 왼쪽 아래/빈 화면 드래그로 이동, 오른쪽 버튼으로 공격·대시·상호작용·리셋.</p>
+    <p><b>포함:</b> 타일맵, 충돌, 플레이어 이동, NPC, 미션, 몬스터 AI, 전투, 구역 이동.</p>
+    <button class="btn wideBtn" id="startBtn">전체화면으로 시작</button>
   </div>
 </div>
 
+<script src="./src/core/tileset.js"></script>
+<script src="./src/core/tilemap.js"></script>
+<script src="./src/core/collision.js"></script>
+<script src="./src/core/player.js"></script>
+<script src="./src/maps/map_school_front.js"></script>
+<script src="./src/systems/npc.js"></script>
+<script src="./src/systems/quest.js"></script>
+<script src="./src/systems/monster.js"></script>
+<script src="./src/systems/combat.js"></script>
+<script src="./src/systems/scene_manager.js"></script>
+<script src="./src/main.js"></script>
 <script>
-window.addEventListener("error", function(e) {
-  const layer = document.getElementById("startLayer");
-  const box = document.getElementById("bootError");
-  if (layer) layer.style.display = "flex";
-  if (box) {
-    box.style.display = "block";
-    box.textContent = "실행 오류: " + (e.message || "알 수 없는 오류") + " / V6에서 player.setDamping 오류 제거 완료. 그래도 오류가 뜨면 이 문구 전체를 캡처해서 보내기.";
-  }
-});
-window.addEventListener("unhandledrejection", function(e) {
-  const layer = document.getElementById("startLayer");
-  const box = document.getElementById("bootError");
-  if (layer) layer.style.display = "flex";
-  if (box) {
-    box.style.display = "block";
-    box.textContent = "로드 오류: " + (e.reason && e.reason.message ? e.reason.message : e.reason || "알 수 없는 오류");
-  }
-});
-</script>
-
-<script>
-(() => {
-  "use strict";
-
-  if (!window.Phaser) { throw new Error("Phaser 라이브러리 로드 실패. 인터넷 연결 또는 배포 링크 실행 필요"); }
-
-  const DIFFS = {
-    story: {
-      name: "STORY",
-      sub: "입문용 · 몹 피 낮음",
-      hp: .62,
-      speed: .92,
-      dmg: .78,
-      spawn: 1.08,
-      boss: .65,
-      exp: 1.30,
-      cap: 230
-    },
-    normal: {
-      name: "NORMAL",
-      sub: "많이 나오지만 잘 죽음",
-      hp: .82,
-      speed: 1.05,
-      dmg: 1.02,
-      spawn: 1.35,
-      boss: .86,
-      exp: 1.05,
-      cap: 290
-    },
-    hard: {
-      name: "HARD",
-      sub: "물량 압박 중심",
-      hp: 1.05,
-      speed: 1.16,
-      dmg: 1.22,
-      spawn: 1.72,
-      boss: 1.12,
-      exp: .96,
-      cap: 350
-    },
-    expert: {
-      name: "EXPERT",
-      sub: "몹은 많고 보스는 단단함",
-      hp: 1.30,
-      speed: 1.27,
-      dmg: 1.45,
-      spawn: 2.08,
-      boss: 1.42,
-      exp: .90,
-      cap: 430
-    },
-    nightmare: {
-      name: "NIGHTMARE",
-      sub: "물량+속도 난이도",
-      hp: 1.62,
-      speed: 1.40,
-      dmg: 1.78,
-      spawn: 2.55,
-      boss: 1.88,
-      exp: .84,
-      cap: 520
-    },
-    abyss: {
-      name: "ABYSS",
-      sub: "최고난도 · 피통보다 물량",
-      hp: 2.05,
-      speed: 1.56,
-      dmg: 2.22,
-      spawn: 3.15,
-      boss: 2.55,
-      exp: .78,
-      cap: 640
-    },
-  };
-
-  const STAGES = [
-    { name: "외곽 심연",      from: 0,   to: 75,       tint: 0x06131a, pool: ["grunt", "runner"], spawn: 1.18, hp: .88, boss: null,         bossAt: 0 },
-    { name: "백골 지대",      from: 75,  to: 180,      tint: 0x140c18, pool: ["grunt", "runner", "tank", "splitter"], spawn: 1.55, hp: 1.02, boss: "butcher",    bossAt: 92 },
-    { name: "뇌전 폐허",      from: 180, to: 330,      tint: 0x071827, pool: ["runner", "tank", "charger", "shocker"], spawn: 1.95, hp: 1.18, boss: "stormGolem", bossAt: 210 },
-    { name: "공허의 고리",    from: 330, to: 540,      tint: 0x120820, pool: ["grunt", "tank", "charger", "shocker", "voidling"], spawn: 2.35, hp: 1.38, boss: "voidEye", bossAt: 375 },
-    { name: "최종 심연",      from: 540, to: Infinity, tint: 0x19070b, pool: ["runner", "tank", "charger", "shocker", "voidling", "brute"], spawn: 2.90, hp: 1.62, boss: "abyssKing", bossAt: 595 },
-  ];
-
-  const ENEMIES = {
-    grunt:    { label: "그런트", tex: "enemyGrunt",    hp: .78,  r: 19, speed: 94,  dmg: 1.05, exp: 1, weight: 58 },
-    runner:   { label: "러너",   tex: "enemyRunner",   hp: .52,  r: 15, speed: 152, dmg: .82,  exp: 1, weight: 38 },
-    tank:     { label: "탱커",   tex: "enemyTank",     hp: 2.25, r: 28, speed: 64,  dmg: 1.48, exp: 2, weight: 20 },
-    splitter: { label: "분열체", tex: "enemySplitter", hp: .92,  r: 19, speed: 92,  dmg: .92,  exp: 1, weight: 18, split: true },
-    charger:  { label: "돌진체", tex: "enemyCharger",  hp: 1.06, r: 20, speed: 108, dmg: 1.42, exp: 2, weight: 18, charge: true },
-    shocker:  { label: "감전체", tex: "enemyShocker",  hp: .92,  r: 19, speed: 98,  dmg: 1.20, exp: 2, weight: 14, shock: true },
-    voidling: { label: "공허체", tex: "enemyVoid",     hp: 1.42, r: 22, speed: 91,  dmg: 1.35, exp: 2, weight: 13, void: true },
-    brute:    { label: "브루트", tex: "enemyBrute",    hp: 3.65, r: 34, speed: 61,  dmg: 2.05, exp: 4, weight: 10 },
-    splitling:{ label: "새끼",   tex: "enemyRunner",   hp: .35,  r: 12, speed: 145, dmg: .45,  exp: 0, weight: 0 },
-  };
-
-  const BOSSES = {
-    butcher:    { label: "도살자",    tex: "bossButcher",    hp: 205,  r: 76,  speed: 42, dmg: 2.2, pattern: "slam" },
-    stormGolem: { label: "폭풍 골렘", tex: "bossStorm",      hp: 410,  r: 82,  speed: 38, dmg: 2.5, pattern: "storm" },
-    voidEye:    { label: "공허의 눈", tex: "bossVoid",       hp: 650,  r: 88,  speed: 35, dmg: 2.8, pattern: "pull" },
-    abyssKing:  { label: "심연왕",    tex: "bossAbyssKing",  hp: 1040, r: 104, speed: 32, dmg: 3.2, pattern: "king" },
-  };
-
-  const WEAPONS = [
-    { id: "mg",      name: "에너지 연사",   color: "#fff067", asset: "assetMg",      desc: "가장 가까운 적에게 고속 에너지탄 연사" },
-    { id: "missile", name: "매직미사일",    color: "#c59aff", asset: "assetMissile", desc: "적을 추적하는 보라색 마력탄" },
-    { id: "bolt",    name: "낙뢰",          color: "#66d9ff", asset: "assetBolt",    desc: "화면 안 적에게 즉발 번개와 짧은 스턴" },
-    { id: "blade",   name: "검",            color: "#ffffff", asset: "assetBlade",   desc: "주변을 베어내는 청백색 검격" },
-    { id: "laser",   name: "레이저",        color: "#ff67ff", asset: "assetLaser",   desc: "직선 관통 광선" },
-    { id: "hole",    name: "블랙홀",        color: "#a06bff", asset: "assetHole",    desc: "적을 흡입하는 중력장" },
-    { id: "shield",  name: "방패",          color: "#66ffcc", asset: "assetShield",  desc: "플레이어 주변을 도는 보호막" },
-    { id: "mine",    name: "룬 트랩",       color: "#ffcc44", asset: "assetMine",    desc: "이동 경로 뒤쪽에 판타지 트랩 설치" },
-    { id: "ice",     name: "얼음 결정",     color: "#9be7ff", asset: "assetIce",     desc: "얼음 파편으로 감속과 빙결" },
-    { id: "hsBelly", name: "한상신의 배", color: "#ffbf5a", asset: "assetHsBelly", desc: "최대 체력 +5% · 주변 적을 광역 흡수" },
-    { id: "jjyGlasses", name: "전재영의 안경", color: "#aeefff", asset: "assetJjyGlasses", desc: "주변 적의 시야를 왜곡해 이동 속도 감소" },
-    { id: "sausage", name: "최승현의 소세지", color: "#ff8a66", asset: "assetSausage", desc: "주변을 도는 50cm 길이의 봉" },
-    { id: "anseongWave", name: "김민규의 안성마을", color: "#55d6ff", asset: "assetAnseongWave", desc: "영역 전개: 파도치기" },
-    { id: "brain", name: "김태완의 두뇌", color: "#ff8be8", asset: "assetBrain", desc: "경험치 획득량 +50%" },
-    { id: "cameraFlash", name: "강민구의 카메라 플래시", color: "#fff26b", asset: "assetCameraFlash", desc: "주변 적을 2초 동안 스턴" },
-    { id: "stone", name: "신시우의 돌", color: "#aab3bd", asset: "assetStone", desc: "묵직한 돌을 굴려 적을 밀어냄" },
-    { id: "lung", name: "유지호의 폐", color: "#ff798a", asset: "assetLung", desc: "전방으로 충격파 발사" },
-  ];
-
-  const FUSIONS = [
-    { id: "thunderShield", name: "뇌전방패", color: "#66ffff", asset: "assetShield", need: ["shield", "bolt"], desc: "방패가 접촉한 적에게 낙뢰 호출" },
-    { id: "gravityMine",   name: "중력트랩", color: "#cf76ff", asset: "assetMine",   need: ["mine", "hole"], desc: "적을 끌어당긴 뒤 압축 폭발" },
-    { id: "cryoBeam",      name: "냉각광선", color: "#aeefff", asset: "assetIce",    need: ["ice", "laser"], desc: "광선 경로를 얼리고 감속" },
-    { id: "stormWeb",      name: "뇌전망",   color: "#6effff", asset: "assetBolt",   need: ["bolt", "laser"], desc: "전장에 연쇄 번개망 생성" },
-    { id: "magicBlade",    name: "마법검사", color: "#ff91ff", asset: "assetBlade",  need: ["blade", "missile"], desc: "검격마다 추적 마법탄 분출" },
-  ];
-
-  const DMG = {
-    mg:      [0.8, 1.0, 1.25, 1.55, 1.9],
-    missile: [2.2, 2.75, 3.35, 4.0, 4.8],
-    bolt:    [2.6, 3.3, 4.0, 4.8, 5.8],
-    blade:   [2.0, 2.65, 3.4, 4.3, 5.4],
-    laser:   [2.5, 3.2, 4.0, 5.0, 6.1],
-    hole:    [3.4, 4.4, 5.6, 7.0, 8.8],
-    shield:  [1.25, 1.65, 2.15, 2.75, 3.45],
-    mine:    [3.6, 4.6, 5.8, 7.1, 8.7],
-    ice:     [1.7, 2.15, 2.7, 3.35, 4.15],
-    hsBelly: [1.1, 1.55, 2.05, 2.7, 3.45],
-    jjyGlasses: [0.25, 0.35, 0.5, 0.68, 0.9],
-    sausage: [1.35, 1.8, 2.35, 3.0, 3.8],
-    anseongWave: [2.1, 2.8, 3.65, 4.6, 5.8],
-    brain: [0, 0, 0, 0, 0],
-    cameraFlash: [0.75, 1.05, 1.4, 1.85, 2.35],
-    stone: [2.7, 3.5, 4.5, 5.8, 7.2],
-    lung: [2.4, 3.15, 4.05, 5.1, 6.35],
-  };
-
-  const state = {
-    scene: null,
-    started: false,
-    choosing: false,
-    dead: false,
-    diffId: "normal",
-    diff: DIFFS.normal,
-    stage: STAGES[0],
-    stageIndex: 0,
-    startTime: 0,
-    elapsed: 0,
-    hp: 100,
-    maxHp: 100,
-    level: 1,
-    exp: 0,
-    need: 24,
-    kills: 0,
-    baseEnemyHp: 4,
-    spawnAcc: 0,
-    bossSpawned: new Set(),
-    activeBoss: null,
-    lastMoveAngle: 0,
-    joystick: new Phaser.Math.Vector2(0, 0),
-    playerTextureKey: "playerShip",
-    customPlayerPreview: "",
-  };
-
-  let player, enemies, bullets, orbs, keys, manager;
-  let joyBase, joyKnob, activeTouchId = null;
-  let ui = {};
-  let bgStars = [];
-
-  const KENNEY_ASSET_SOURCE = "Kenney Tiny Dungeon / OpenGameArt CC0";
-  const KENNEY_ASSET_DATA = {"playerShip": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAByUlEQVR4nO2bP0sCcQCG77wLQ0lRQpIcikKF/gwVREVtTUFD7a0R9BEaIxqjj9DS2NZW5FIUQRENlf2FIEkHzcqLU65v8N4UL3Hvsz4XPLz8oJ8emlNzy54BGKpdIW2sLuSgD1kh6N+KJeg9D+YZGwf47w9vLkzkcV0A0ADsADYagB3ARgOwA9jY1tMlfGAg1w79/e079NFUHPrsZBb6u5cP6AdTVeid/hV4kQj8CdAA7AA2GoAdwEYDsAPY2H4PpJNh6JO5DPThRAf0kQS+Z3yVmtDn+5LQn5eh1gnQAOwANhqAHcBGA7AD2NiGz/fu4Qi+B8TdBvQ96U7oW80W9NE6vgc0vl3oTecT+sCfAA3ADmCjAdgBbDQAO4CNPZZPwAeGZ/LQP55WoC/vd0PfZsHX90btJwr9/GIM+qPNAvSBPwEagB3ARgOwA9hoAHYAG7tSdeAD27vX0Pe2RqDPxLqg97w69GevRegf3GfoXfx1g06ABmAHsNEA7AA2GoAdwAZ/GP8HTCytwxcbJztr+r0AQgOwA9hoAHYAGw3ADmDjew+YHp2F/2f93r/70cyOQ3+8t/Wnd5XAnwANwA5gowHYAWw0ADuAzS9GCVTUjZrbeQAAAABJRU5ErkJggg==", "enemyGrunt": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABL0lEQVR4nO2bO2oCUQBF/Y1IgkXAWvwErGwigh9Qglpo4Q7cgZvTyjapsoIUioWNVVAQBS3E7OBaiJzi3dNeBg6HB/NgmHgMpt2f3NQ+SJfk8+VmJPfreSn3hFwDwAFoARoHoAVoHIAWoEnRAvf43izkXht+yv33Ly/34E+AA9ACNA5AC9A4AC1Ag98DcvuV3PudityT66Lc66OC3IM/AQ5AC9A4AC1A4wC0AA1+D8hmXuXeeK/K/edrK/fqW0/uwZ8AB6AFaByAFqBxAFqABr8H7M4vcp/ND3KPUhe5n1Z7uQd/AhyAFqBxAFqAxgFoAWOMMcYYijgt8Gxa46n8HyH4m6AD0AI0DkAL0DgALUCDfxd4lG7lQ77ny9FRPh/8CXAAWoDGAWgBGgegBWj+ARMBH1VisgF6AAAAAElFTkSuQmCC", "enemyRunner": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB0ElEQVR4nO2bPUvDUBiFb/Rqm1qhpOhgwMGhIBZdXLQu6ujuIqijv8LJwdXNP+DmqgiiINZJ0cEvioofUScrtApJTIz+g5Mhwxnu+6wnyT08vHAvSWutT079KcBAEqBYTVdHYX5534D5aWjBPPB9mNe1A/Pjs324QAe82wBEALsAGxHALsBGBLALsNFv4S+8YNnphHlJxTAft/E+f+Hj9d9jeExRVvQN8zSMnwARwC7ARgSwC7ARAewCbPRwqQdeUC/ifVo1PZznu2DsOnj9OPqA+WOIl0/D+AkQAewCbEQAuwAbEcAuwEbnbLyRlmeqMB+rlGF+fov3cXWFzxFPHn4fkBXjJ0AEsAuwEQHsAmxEALsAG/3Txg629+5gfrh7DfOoUIB58bUF86UhF+arDynnjBSMnwARwC7ARgSwC7ARAewCbPSIjb//33ifMD/yE5gPduPv9/N9+Jzg5nC/NCYW1+ALBeMnQASwC7ARAewCbEQAuwAb/dxqZ3uChX8HmEbTx/9H2Gi8wDzpr2Ra3/gJEAHsAmxEALsAGxHALsDGqs0uZPoAf3KwBQ8CtbkV/PzgCy+Q78Xr72xmOogYPwEigF2AjQhgF2AjAtgF2PwDIIFWZ6gHBu8AAAAASUVORK5CYII=", "enemyTank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABzklEQVR4nO2bMUtCURzFfRGBQSUm2mBJQTzIaqilMoIg0O/Q2FJLaxCNjX2AppaIoJZaAhdJ0IyWlqYSSShRgkpMk15o3+C84QVnuOe3/nyX4+EP9z65Wj6PrM0sdpFPbu/C5/v9fuhj0Qj0xedX6POnR9D3QGsAKoAdgI0KYAdgowLYAdhYbh9IpDbgPr8UH4fP23YM+lTgAfq6NQR9pjEFfeOjDr3xE6AC2AHYqAB2ADYqgB2ATa/XBSLhEPTzYx3oj9M16BcmW9D/vDWht+MJ6I2fABXADsBGBbADsFEB7ABsXM8BVhvvs1/vFegLpQnot5JR6Lu/DvShkUHo8+Ui9MZPgApgB2CjAtgB2KgAdgA2rueAcKsM/frcKPTZwjX0l3dV6IPBAehfvvH9gNXlMPTGT4AKYAdgowLYAdioAHYANq7ngLYDrwf4ztNP0Fce8T5vD/dBX3Xw+36zVoI+6+h+AEQFsAOwUQHsAGxUADsAG9dzwNX9LbxL+Dm7Dw8KN7k917uIiM2dA7j+4cmZp/WNnwAVwA7ARgWwA7BRAewAbDztof/BynQC/+DQxfcMOwH8v8Jc/gJ+R+MnQAWwA7BRAewAbFQAOwCbPxThVDcwF0eIAAAAAElFTkSuQmCC", "enemySplitter": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAByElEQVR4nO2bu0rDYACFEwmtWhULmoJTJ1FEodQu1oqCYCchQ8HFxYfwERzEyUFfwLWg4CIIDr0g3nAQpLp4GZqh1oIgaNvUNzgZCh4x51u/ED8OPyS1ahr/nPTKRgf5nt8K+atoAHYAGw3ADmCjAdgBbKxsIgOfk6Zpwhu0PQ/6z8gI9MXSIf4BPswvrcH+eD/uC/wJ0ADsADYagB3ARgOwA9iYJ6V7+BwNhyx4g/fGB/QH21vQV4fi0JfzO/A9we89wMkuwvsH/gRoAHYAGw3ADmCjAdgBbKzHm0t4QdSOQf/6UIF+OjULfbVSg75brgoF6AN/AjQAO4CNBmAHsNEA7AA21ptbhReEwr3Qu89P0EdtG3qz4ULfLVPJJPSBPwEagB3ARgOwA9hoAHYAG2simYIX5Pd2oc+sOtDXfd4zYs069HO5Tfh7f6P2ArXfHx8E/gRoAHYAGw3ADmCjAdgBbPCX/4ZhjCfw5+mOhx/TY5Mz0PcNDEJ/VLiF3otEob8+O4U+8CdAA7AD2GgAdgAbDcAOYGMNj+Lv/xecHPTtVgv6u4tz6JvfX9D7UT7ehx/508vr+r9BhAZgB7DRAOwANhqAHcDmB/kTUPq4gsjIAAAAAElFTkSuQmCC", "enemyCharger": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB7UlEQVR4nO2az0oCURjF7+S1/ENJIxWGRVCrlCiKsIW7alFLF9GmV+kZgl6hhwhqkyFFLkppo6RkKIlNlFOOmGX7FkeixYHm+21/d/Bw5oO53hkjubzeU4CF4DvSKjbhgz445IE+XX6DvmBr6M9y5wZc0IeBv1z8H5AC2AHYSAHsAGykAHYANtpwbLxiBD+Hw2YA+mlzEPq56DD06RLeJ5jGCtzH1GNb8HrXT4AUwA7ARgpgB2AjBbADsMEPeaVUKhGB/rKE9xFXtfbvEv0gHvFDv7E4Bv2R1YDe9RMgBbADsJEC2AHYSAHsAGz67gOeHpvQ1yuv0L+08bF9o4fvQcLbhb7agccBSml8HuH6CZAC2AHYSAHsAGykAHYANlp9fcIF2Xt8Lm8HQtCPr65BH/XirUjNLkKfzdxCn8kfwI2I6ydACmAHYCMFsAOwkQLYAdjo7eQUXLDTxxfLeB9hbO7iBD38f97IH0O/l5qB3rPvhz/g+gmQAtgB2EgB7ABspAB2ADbaqlhwwelJC3pfCL+fn+zg84Suxt8ZXtzcQe8pVKDvtPD3Ca6fACmAHYCNFMAOwEYKYAdgo6/1LFxgfeCOlsL4vMBx8Pv57kMO+mrTgf6wNgr983wcetdPgBTADsBGCmAHYCMFsAOw+QbyCF5fA3uW+QAAAABJRU5ErkJggg==", "enemyShocker": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABWElEQVR4nO2bMUoDQRhGd3VSpDAQUEhhIcEjpMkaO7FM5yE8gZVYeAa7aOcJLARBsUhsLDSVKBECVmkDgorseoMvhCV5wnyv/Wd3H4+BhFk2zQ6OikSwOn5W45nktXU5H9xepqUeUJIV8uH/AQegBWgcgBagcQBagCZUhjdyweHeppzX61U5P79+m1tqmUS/AxyAFqBxAFqAxgFoAZpQyNOAJHn92ZDzRnVLzqffozmVlkv0O8ABaAEaB6AFaByAFqAJRQhywUnvQp7bnw5G8p/E7/1Q3j9rtuX1D1dnC31vEP0OcABagMYBaAEaB6AFaMJHq6tXvDzK8fHOdqnf6d3W/owTicUS/Q5wAFqAxgFoARoHoAVowtrknXZAiX4HOAAtQOMAtACNA9ACNGkn6+pz/a9PeYMi1ccBlTyX8/7Tnb8XIHEAWoDGAWgBGgegBYwxxhhjKP4A5gowmpnBC/YAAAAASUVORK5CYII=", "enemyVoid": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABhElEQVR4nO2ZvUoDQRhF3RgtBJsUokUiIiiKoIWFioW1lRZi4XvY2ooPYS2KlZWNP4VREERBLIKpUgmpAqKw6PoGdwjDcoS5p73s7OHywX6ZZAORrO4dFCqvdDvy+bvL4yzWIYYK+fL/gAugBWhcAC1A4wJoAZpq7AG1l2uZb85ta4GZJblH3LaeS90Tkp8AF0AL0LgAWoDGBdACNME9YH1jV36nF4a+5PMrjTWZP3ZOZJ7v7Mv3N8+OovaE5CfABdACNC6AFqBxAbQATfR9wPzksMzz4kHms/VRmbf6NuqP5CfABdACNC6AFqBxAbQATXAP+BmbkvnF05XMe/Vzmd+0P2XefI37vR8i+QlwAbQAjQugBWhcAC1AE9wD7k8P5Xd4a3FZ3ttPT4zI87/feiGFUkl+AlwALUDjAmgBGhdAC9BE/y8wWNUdjjdq+oDsI1YhiuQnwAXQAjQugBagcQG0AE30HpDnvzJvv3f1AYW8Tiid5CfABdACNC6AFqBxAbQAzR8TZTUAoqv6ygAAAABJRU5ErkJggg==", "enemyBrute": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB30lEQVR4nO2bTUsCURiFm7gQSAhiQ0oY1CKGCKEPW0xDRQuDEFq57he0bdm6X1HLVrVoF20tIkpioOyDzBI0UKuRPsgk+wdnFkMc4r7P9szce3i8cPU6Y3QFxM6udVBuNOuBxj/c3zQCDeBD918O/h8QAewCbEQAuwAbEcAuwEb5XbCQtOE+n3g6gvc7SRPm7fYPzEOjk3D+g8uzQN8TtF8BIoBdgI0IYBdgIwLYBdgYs9YU3Gcz0/1wAO+9BfOci88DlMLb+HC8F+aFVh+eP7cLJ9B+BYgAdgE2IoBdgI0IYBdgoxYn8O/1YtmDecqKwnx13YZ5y+c8YGvvBua3F/cw90P7FSAC2AXYiAB2ATYigF2Ajao2PuEFGSsM83isB+buSQnmxWd8nrA0FoF5tfYB83YsC887tF8BIoBdgI0IYBdgIwLYBdgo9xHvoykTP0JQeWnAvOR9w3x+PAbzneMKzFeWR2C+sV2AufYrQASwC7ARAewCbEQAuwAbNTCThhfkQ9hR8TyPJ2ji/xUSYfz8wFAUnzdcXddg/tbB92u/AkQAuwAbEcAuwEYEsAuwCfxOnjOHz93T5iu8PxnBn8Fd/Qvmp2V8nvEw6MBc+xUgAtgF2IgAdgE2IoBdgM0vSJNcOWdS2lwAAAAASUVORK5CYII=", "bossButcher": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACPUlEQVR4nO3cv2/McRzH8e9paa8qaa5hcInB0EQ0LBZqwWi3SDD6I8RksNrMEpuVSIREtDEQBr/SINRhUklLcnfuHJvR54Vv+hw8H/M73+/38sxneOeb71WVJEmSpP9NozRw8dDhH8mFdo560Q2PzO+L5p68Wo7mHvSLP6GqqqrqdbvR3OJ4K5q79/BWduOCTXVcRH/PADADwAwAMwDMADADwAwAMwBsvDTwof89utCZ1lg0N1MNo7kDzWzRfNzNnu/jMFroq8bgazRXF08AzAAwA8AMADMAzAAwA8AMADMArLgJ75nZGl1ocTrbSKvVTjY3uTkaa7ey5xsOPkVzb/rRWG08ATADwAwAMwDMADADwAwAMwDMALDiJjzRzFbD2aPz0dz+udlo7tGLbHOtnmab9dtO9k54o3kCYAaAGQBmAJgBYAaAGQBmAJgBYMVN+Nt61ujazZfR3J0bz6K5wdRUNDf9fi2aO727Hc2dfx1u4DXxBMAMADMAzAAwA8AMADMAzAAwA8CKm/DeZvb97/PO52jubncUze3akn2ve2J7tjG3J7LfkTp46kL0kvn+lXO//eDZEwAzAMwAMAPADAAzAMwAMAPADAArbsIra+v13rFRy18u/7Lazf6z+tLyu2hutGPuXx7nj3kCYAaAGQBmAJgBYAaAGQBmAJgBYMW1dOHYyVo/sF26fTVahReOn83u2/uS3XhyWzS2dP1yvat6gScAZgCYAWAGgBkAZgCYAWAGgBlAkiRJkjbYTycqWG0iq11oAAAAAElFTkSuQmCC", "bossStorm": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACNElEQVR4nO3dv2pTYQCG8VSkUMF/taQOVVGQglWhuigRQZC24CU4uujiKoijoxfg5CIiNItdhGwWEisu7lqqBVtaCtKCrcVI4h0k7/CZZ/D5rXk5gTyc4SPkpFKRJEmS9L8ZGvQb3r50vZvsZh8+jq53aGQk2p2ZGI92y9/Wol3r9YtoV2/M9/yMD0RX0T9jAJgBYAaAGQBmAJgBYAaAGQB2sNSFanP3ohPu9NTZ6HrHu9vRbm64Ge12to5Gu6+dC9FueuZOtKs35nu+7h0AMwDMADADwAwAMwDMADADwAwAK3YSTo1Xx6Ld1dOdaPeysRntrp3fi3a/t3aj3eRULdr14x0AMwDMADADwAwAMwDMADADwAwAK3YSHtrPTpA/f6xHu6WVc9HuwexEtOv+aUe7sZNHol1rdTna9eMdADMAzAAwA8AMADMAzAAwA8AMACt2Eq7urUa7u1dORbvFpXfRbuHjRrQbHT0c7b7/yn4nfOtGNdr14x0AMwDMADADwAwAMwDMADADwAwAK3YS3m9HPxOu1Btfot365+yEO3liONpttLPvenc3V6LdYnsn2vXjHQAzAMwAMAPADAAzAMwAMAPADAArdhJ+++lD9Bzq7ctPoyPz++aTos+1vv/oWfS+z1/1ftZzad4BMAPADAAzAMwAMAPADAAzAMwAsIH/i1JpNy/Wsi+ju9kTuDrHsn9barbeFPnsvANgBoAZAGYAmAFgBoAZAGYAmAEkSZIkacD+AgAGWOyx0ZuUAAAAAElFTkSuQmCC", "bossVoid": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAABxElEQVR4nO3aL0tDYRSA8W1Og2BZEA2biKAoggaDisG8pEEMfg+rVfwQZlFMJot/glMQREEMw6UlYWkgChedX+GAl/cZ7Pnlw3vveHjD4a5QkCRJkjRoiqkfuLZ30IvMlTrt0Hl3l8fJf0OeSvQLDDoDwAwAMwDMADADwAwAMwDMALBy6gdWXq5Dc/X57dBceXY5tFnfNp/7cmP2BsAMADMAzAAwA8AMADMAzAAwA8By24Q3NndDG+ni8FfovNXaemjusX0Smst29kPv1zg7SroxewNgBoAZAGYAmAFgBoAZAGYAmAFgyb8JL0yNhOay3kNobq46FpprhqbS8wbADAAzAMwAMAPADAAzAMwAMAPActuEf8anQ3MXT1ehuW71PDR30/oMzTVe037rjfIGwAwAMwDMADADwAwAMwDMADADwHLbhO9PD0Ob5tbSSuhfyjOTo6Hnfr91Q3P9yhsAMwDMADADwAwAMwDMADADwAwAS/7v6KFyrPlErRI7sPjxj7fheQNgBoAZAGYAmAFgBoAZAGYAmAFgyTfhLPsNzbXeO7EDe6FPzH3LGwAzAMwAMAPADAAzAMwAMAPADCBJkiRJif0BETs1IGasulkAAAAASUVORK5CYII=", "bossAbyssKing": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACNUlEQVR4nO3cvWvTUQBG4bRRIg22JEix2EFRkoAfgwqiopuT4KC7qwj+CY4ijuLi7uLoIm4WXSqKoIiDWj9BsNgOrVUbSUKcXL3vUD1SzzO//EJ6uMOlSSoVSZIkSf+bkdLg6Mlzw+RBe5efRS944XQ72o1WR6Pdp7n5aDccRm+jcvlu9ryZF0+Kf7tE9i71xxgAZgCYAWAGgBkAZgCYAWAGgG0oDarvnkYP2t3eFO1ev/wc7eqTE9GudaQV7V59+BLt9kwuRbvurvPR1Xr29vXf3pg9ATADwAwAMwDMADADwAwAMwDMALDiTTg11axFu2Z7OtrVGpuj3Vgju4F/m+9Hu87OZrR7vBDNijwBMAPADAAzAMwAMAPADAAzAMwAsPJNOPxUcW0suwlP9Faj3fapLdFu0B9Eu/pKdhNe/d6LdiPdr9GuxBMAMwDMADADwAwAMwDMADADwAwAK96ED3Ya0YP2He9Eu7cPF6Pdwp1t0W5jNfu67vKPerQ7dWY82t27cj/alXgCYAaAGQBmAJgBYAaAGQBmAJgBYMWb8OJSN3rQtZvPo92Owf5oNz2+NdoNhyvR7tHHuWj3pvc+2vWyf0UXeQJgBoAZAGYAmAFgBoAZAGYAmAFga/L7x+vJ4bOXoo+DP7hx0d+OXg8MADMAzAAwA8AMADMAzAAwA8DW7CZ87MCJ6Aa5Vt+v/aXfOhTtZm9d/Sdv/Z4AmAFgBoAZAGYAmAFgBoAZAGYASZIkSfrLfgL4eVcGcx9qdAAAAABJRU5ErkJggg=="};
-
-  const WEAPON_ASSET_SOURCE = "Kenney Tiny Dungeon item/weapon sprites, embedded as CC0-style fantasy assets";
-  const WEAPON_ASSET_DATA = {"assetBlade": "data:image/png;base64,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", "assetShield": "data:image/png;base64,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", "assetMine": "data:image/png;base64,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", "assetIce": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAGyklEQVR4nO2aS28lRxXHf1V9+z79ysTMJBJZ8BEQOEgsWEEEAokNG/gObNnAJIMHJD4AnyFbQCIKjyzYsXBC2LCHbCDDPDz2fXTfrqrD4pxu2307IzQztiea/ktWX9etW6/zP89q6NGjR48ePV5auOtewP+Lg8P3BUBCAEBi1GdKSEoX+oqIfnBn26s/fvyrH1zYs7+c5X5+MLjuBTwJb955TwDc/BHc+xcAUiwBSGWh/1clBGODKBMEZYBzHry3z91k7xnQbji4+ycBOLr91rXbB3f6SJ/H/8HPHwIgyxMA/Gqu/5crCJV+ltgaIINMZexdt6w3VWC9evaVPyMO3lHqc++fALiT/5Kd3gcgK/QAsvVCn6HERTWMDlWBhu0uQ5JuPEr3XL0KtBukvH4G1GuQ+bE2nNwnmysDZkmN4CxT2s8miaFTyQ8y7e68UcAJIalarNYt9TD0DGg3vAgMqO1QMoOXnT5ksFIjuDVUfb85VXG/uj1kNlSJj3KVZzbQpwBFpcp/fFp2TtUzoN0gVfdJXSWaNZirY/mYrDwFYJKrtF8ZTQF4bTdnd5YDMB3pdnJjQnKwLFT3R/5iuFxj0w3GbmNxpajXUK31uS5wlUZ+g6RLHnql9jjPmI70ALamQwDyXPskD86psRwPexXoxIuZCzQxqEUvKekfEC2iCVE7ldFRRjWIueT2e2WCOEfw+l2k27j3DGg3NEHEdcLidtdkcp5kbZWFtkuT+mmV4SuVfAwq+dFgYuNkLEXtyNICqDZ6BrQbXgD5N2tocnjvEadLrZxKeykq7ZM0gjQGIMgMgLGb2u8HrLwxwHUzoMMNqtv4yi8+EICPfvbNqz+TaO6vdociiKlDzHTj1VA3WY52KCY7AGSTbe0/0YNwgwGlU/e5Hvcq0ImOXEBPyhWnV76Ypg7wyT8A8JW6LpcCjWIMle5ptqvPvZvEG68AEHa1LUyNAZknLnQ/8aQPhDqxaQMKjb/d4jEABz9/X47e+c6l24Gv/vIDcY8+1blXyj5nWaGLEWelLSaq+7J7A4C0/zpx/wsAxL09AMJU+3gHcaxjpZPeBnRi0w2WWmtzS2UA+ZiDu3+2Qum3Lo0JbvH4bM5C10BQbyAOJFfrHydb+tx5VZ83blHtvwZAZQxwYw2EHMLa6+f17knnvBsHkFvWJbaINJqDpZ6XgYM7vxcAf/IA7PBrV5zM9TGcUI1HAKzN+BWzPf1q6waypeogU/1uPdK+ThLrUu3qcrrXOX+vAu2GSVB3UZo0UrlELrFU7q0E54pFM09dkYgjdWc4T5pZdLd9U3+3pSrAeI9yqAFQkWmfgUWLTkKjAqejve75n9tOPqfYYMAsqeGJJo11uSRdYpmscXXlArEKUJP5WWgbp9tUWxrupt1bAMhE9T4MtxialHPUUGbRiqJBqJKy4Tc/+nqnAd84gHFSAzQ3VaAqm4V9+VCvzT5++9mvzd48/KNefN7/BAC3LhqrnywJCqYC6+EIt60GLk514x/++Cw2+cZfHgpAFuwazNolCCFkT1xHrwLtBp/sns1cEbECayN1V1afCvVYdq9HODePveAgmUpPBjlpoPQufb4x1LEVR2oG1GNLgL+/deuJbO0Z0G5IdQ5e37jGcCYt+Ywr1qfCuYInQAoN67zNndl1d1ZlRLNDodLv3vj1X3WAW2/wsDLdF39haKk8X/ztPQGIK3Xr//7hl/pXZM5jgwFVrX/2uolDcHak9asnzwcXx3QiOGODN2+QNz0Tkut/1UqzumKlXqoqAnGgTHG5Wfx6D0HAbob8ct25io0DWJsPTt6+8hnO1/fOzy8Xqktckg3Onq52Y3bdXb/5kQLJ+pULTW/DXNP21XxBZfVBl4eLk4QKZwWefNFd4OlVoN0QrNiYxhaHj2eQaxmKbNMFPTXqsazEJeMZzqjvrCiamVGUsCba22GZFWr8yQPtO5zhCgvaLGU+20zVRJp+cdy5jJ4B7YbK8ua0o2Um2dkHy73/dvv5lciPfqpjHdz+ndYDYgSzNc7cn7NwfFAWSFTJj61PsiKpKxZN1ljbkwYp4a2+kVuRt10Y6xnQbqh26gLj6wCknX0+uvv9SyuFHdnYB3feE2/hbh0Q1aX5LB2DSXJas8IqVuPHnxLtd2y8CyjNK3QD8wb3Wj02jeD2PnCWdn54+L0ruRk6uvNdd3D4B1WHUl2ct3cDnR/g7VAyO4ihbSjOHyDmnqV9sedoIs3MXGobvQq0G+JMb1mOrkjy53H09rcdwNd+8q6GcmZ83fS4yRRrBmS1ZFM8i/zaA54L3PxnRLEvPQN69OjRo0ePHi8v/gdgWs9pMzwCMAAAAABJRU5ErkJggg==", "assetMissile": "data:image/png;base64,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", "assetBolt": "data:image/png;base64,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", "assetLaser": "data:image/png;base64,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", "assetHole": "data:image/png;base64,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", "assetMg": "data:image/png;base64,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", "assetHeal": "data:image/png;base64,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", "assetHsBelly": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACDUlEQVR4nO2aPVZCMRCFB48VlQU1i7C3cAfQ0NiwNBsbGtmBhb2LcAXuACsPIc5kfhP0ZL7GI7wkc++byXskAUiSJEmSJEmSJEnmYzF6wNPX4cRds7jbDYur+0ASwRw9DenWcYTwmh5GhHfICv84frKd3G/Wra8jjQg1gBQvEU1BmBFlQkgnqHCPaArEDK8RN57GAAPFE/165xqXe78G7yUco8oGayaYM+Cq4pHxrJngLgEsmGEEjGtKmwu3uSAeX86p+vYkD1jTrigHbSmoM0CVaqUI7P/odqAvBV8JtO4+FTQnxtLOUQoqA3q83vZAE6c9A6418VEY44l5CmBQExc3oVnbGREbYEr/OmipCGu7Amm84keG6tF3TZSPxH4l8E+Y3oDb3gM87I7ilxgr74fNmPcAC9rgel9fM6QEpEH+XKe93sP0c4DNAGbREoO7W/X32uutcYkNkP7M3O6P6+0en/goUVGfl0jjDS0BSniJ906vlrJxpNgNQNLt9fkcbGSQrXFa8UhQGaBdbeFKQTqLr5aXfzk0caqXxCSLobVw9I4JEfXlWCFWl4Ck8zpIazlYjNRmqXlfQPLrkBLeEqJu41gQBYgyAEBtggaJeIDBBgDoNkcsRjRTPmhnyL05atkbbJnB1nnwBun0u8N5PiCik5KpT4iUTHtGqGbaU2IUf+2cYJIkSZIkybR8Aw/2Q7J1GeAkAAAAAElFTkSuQmCC", "assetJjyGlasses": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABpklEQVR4nO2YMVrDMAyFlXxcAlZ6Fs7BzMJqTkDWLsw9R8+SrukxzEI+XNdxbFmyIXn/lta29JQXVSkRAAAAAAAAAAAAAAD75TTZsXUONXB19v6HWy+Cr7NzL1xen7pD3dT0CensicJit+aEpZvcuxd1U2rLrLfzv/Ar5RfmNFmbEeTufC4lcWOaelrB3ZyTBGe91Dnu+rVHOXiHFjY95yThUuKEwiJeArncODrogEA/YIsn4osQcNBN3qE+F70zP064Ez+8vX+sRTZfx0//sxwnhMRz4xLRZanJR3tAaFNKEjnrUimJG/uFW22CW2f3BXioFejlkWiyeU3tfNXK5pfdOwAFaJ1Aa6r1gPO1fA7QYPcOyC7AwqTFXtc6bpIlJezIeSGqETfJAaXv9dz9NeImPwJ/WUTJvqwekJuM1D9CreICkIEZrTGjNf8tlvggpF0E6fNVJkGtImicK1aA4dAN7rV0sv55fjwuog7QKoKWeKLEUTiXkHBO0lLnxFAbGGJ3PyaCu4+L+sQk8RhoCJ+pNjJyCqEpfKbJzFzb5gAAAAAAIMA3DnbZaCQU9zkAAAAASUVORK5CYII=", "assetSausage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA4ElEQVR4nO3XvRGCMBiA4eA+bEGnhY0Nk1hZWDlJGhoL7bJFBsIquRwn+THRXOR9KuBCvh9yQIQAAAAAAAAAAADYiK7EJPPjOpeY5xPd4ZJVQ/LNNYuNldKU6IEtFL4U04ioBrjFT7e7vX46H+2xlkr04/BMSTCHlmrfj4M9X8sr1IRdSlA3yLvzWnLyCq4A8/R9k5qOa6miA+cyTz8mL98qSFoB/4gG1E6gNhoQGmBeIO6nxVXjBejGC+VV9DO4DLYW/Ndy8uJPMHXSFhrxlb2AT8u7QQAAAAAAAAAAsB0v/BZMjaY/QQAAAAAASUVORK5CYII=", "assetAnseongWave": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACJElEQVR4nO2YIXLDMBBFV52ikhgEFfQIBcVBxQY5go/RI+QYPoKBcVFwQY9QUGTgkFCX1B11sytpLTszSf6byUzl791ov6TRNkQAAAAAAAAAAMAJ2/fh85rGnPuQmJrkkvTm1T372t2UxOPzS9N58UQRA24B1YCYe5euj9z8DnDSw5B70rmz6tsX+tIm1HzQU27+kM5JugXmou6HlkgvnohoNEcyYglODEg9OxZ+CzdxbiPkScxwDdX90PJPKF56P+f70yoNsP0e6qljqZDUeM2EnPlIpHWCkSSSzleuOVKn5ZGeV4Ur/Rx1P7TNkbrc+TWPrvK1cCcYmXBqQXziqfGxgq3z48UTLdQHbB9o/felShGp+PF+3rnQO8GIeynu5sRbj93U+c2+A+ZcfSnP3LtANEBzT3PxXLpGTvzN/y9wYoD1bF81U67Bfx1f5jWqNVVTr8FJtMPwZhnz7s0ar4211tiaj5PUCcaS+Hp3yIvXdCnvlPylcztfE38PSElcOrfT9O5Am/Hv9Yr21niuS/ks8f4z/h5uAU2IuRfS/VUfV88S7+vabsqZn89ZdoBfxDniLIgGaO5pLko6P/t1P7SWeF58VbjSEi/pEovuAMmE2Kp2B9pIxS8xPyLhGkw9O6msV7TnBfFx6DdD7RaZi5MdUDq3Gz9SAN9u/D1JrwpXWlexKly5XtE+Jb9F5wT7gKUIrfiS2x0AAAAAAAAAAAAAAEA/RFSqft9HzWYAAAAASUVORK5CYII=", "assetBrain": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACYUlEQVR4nO2aPXbCMAyAlb5urNwA7tCFpScpA8fKUE6ShaV3IDfIypwuhOc4sqM/G95D30QSW7ZkW5ZlABzHcRzHcRzHcRzHeTea2g2O19s4/e6O58f779+fx+9mv6nWr8/SDYQKS+uUNEgxA0gUX5NVwhCmBiAp3fZD8LRF3592W0AI5VsZ48NCyHi9jQLl1W1ayFHPgGxHCKO6ICwnqc9EZYCk8thIU0Z/UjJXPzDEeL2N2qUgrsxSPiY3moL6GiOIKoqVp07jikYwcYIAwFO+7Qdo+6E7nmfBEMtJRmWlTtHGAFTl74pP78LojywrU1ZiBLsZkCLn2F4AvQFyitVQXilb7wSxDqx5+ft39DAkUShoj+sM2TNgsc5CZU+77aqnT80KZJ8nyYy+cf0AewYsRh/rXKxMXO7+vbtcHu++DwfcAGuyEfmcWaA/DGFGyD1TfEaOuIzSB+gNkBrlGG6cEL/jyiOiWwLUziTW/bQEUAfI3UGES6B8HAAwH9FoVBfKh2UqxA51ZsAE50jLVV44A2wOQ4rOLqgcBxRPiqKktjIJykSJjQ9QdmJ2IqyMyADoNOMaoUCKS5ITsM8IAZCDne54NjsDAFQ2AIAyM9v2QzYOWMMoI6TOraM7AtHLz84CYXKEGS5XzwnGSLfFxWFI4Be0WWGTXWDRCcqxGCNMmUnaFWAWBzT7TZPMFXAdHOFCxOpqzDQQQo0AwA94VmaP5SVpsWtnxC/8sYWcdl/h48vfDodMnbW4xCz5/4Dix+Fmv2nEe7SiLpU6+YAXxg3w7A48m7c3gOM4juM4ztvyD251eqVbYUFQAAAAAElFTkSuQmCC", "assetCameraFlash": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACKklEQVR4nO2aIVfDMBDHLzwwTAwbdO2qMRPbN8Ayi8LwWTAo7LB8AxAz6M1OUwuCmYlhKOsLWXqXXtKmu997E1u7W/7/5pJLMgBBEARBEITE2H3efHDEOeEIkjJJGsD19JOF04AkewAnYkDbDaAi+c9swClXoOX3btc0Rj5QiqMtFJJKgRDdn60HlNzN7snfeZw/cDcDTVI9AABAXTxfcsZLzgAqdWnDngKhcAlxXavrMd4GcIz6pJjbWQHAPxB6TTshxNcx+jWAAma8II8BbYgPCSkFTPHXV9PGDVgvXw9ey/J9/PVCk+JiZwt0CnCLdwk3yfIprBcanQKrs7kGwFWWXtNgTPEAQBJPJfo0aBf/Zvls4hW/fPpYohrwX7xNuHnNzwgs0SpBmnif+wCycYF++mU90VIliBcFX0+N8r8TpTB10PP+nYUuYDv7e48pkVtYDBGefgR6vxq0US2Sum1Aw/zH0G0DAmCWyEdngEkLBoQtbFzYFkhRDKiu6tAQ8j8bF7p8dboU3jMB7+lwONc+hh5aHkczIMunRkGEMGF4q82U8epNDqLvBzRZDdaJf3l/tW6duTZHSHuCYU1wgxEPYN87ZDMAgG9PcHSOv3e1IcQlGkCeBbgOMFebemGYe+oIci6QD5Ti6glNBVbJB0pRzw28Z4E2jrKpBDkX6DI+p0a9MqAK9lygtwZg6aUBlP8Q9NKAo+WoB0H5/6CnAb3pAYIgCIIgkPkBI9zX05Apo7YAAAAASUVORK5CYII=", "assetStone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACDUlEQVR4nO2aMXKDMBBFl0yuQOM2tC44mBv7HHbjg1G4FS2ND0EqzSiyhLRidwVkX5NJglf6X1+2DAugKIqiKIqiKNUw03s203uuMfZ3jUEtVvT98fzze3dqG6k5iA3k4gv3uV0vYiaIGpAS7nK7XgCAPw3sBrh7O0e4D3ca2ApjVjsFZxrIC5YKP/c9vIZh8RqONJAVKxF+7vvg35eMoE7D6iJY4THRPlJpWFXATO85JTwl2BfqX8+dBpaDEFZ06H+2hv0Zeo17gCo1odg5f/WXRKfiHCNUM1arNA1FBoSij4kuFuy2wJhAugUoRYfq5mwLLOgE5LzxcbOUCGwCvjADb0E8AG3SUAZsidcwyG6Brax+DphtkJWAPYnHststQEXSgCOvPoAmIG1Ad2obe8w8IpqAnIuOnAJNQO0J1CbbgD1tg/vjCbmP2nafgNGYVa/ftQFW/BoTUAZsZRuMxnyILjVhdwmICf3puqJ66Fti3altan0/CIkvFW4huyc4GrN6Mku1Q4TGw94dJr0p6k6UygyseJHb4gCfX5Op9ybnqruQJcCdmDv5klRwr7oL67PBpY+mmBm5b3RUT4lXGwCQ92Q4taqSq+5CUsQ/d6cMyT20+OI5OkVYWmRy+4JqrbqLaJMUQNwQa4bEqruI9wliusYk+gWrNEpaYumQ6hHcHDV7hhVFURRFUf4dvzbYTPpEUcgfAAAAAElFTkSuQmCC", "assetLung": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABzklEQVR4nO2a3VHDMBCEHYYmUkIqoBKeQwUpgQdKoAJSVUqgDPOCZ2T93um0Ohjv95ZYWq1WZ0vxZFkIIYQQQsgxOXkNvH59rPF3p7f36X6eZg/412AA3ga8YQDeBrxhAN4GvGEA3ga8eR4ptj4e6enucjGf7lC6yzIogJzB+FqPYZRuiPkWqJnsaYfWjTFVQDL45/07aXS7nsP2khVD6eborgCRycz3rRVD6ZboCkBssnC9ZBalW8O+DbZMatuhdSPUAexStkzq5XV/Lfxs0NVWweEPQqoATKuf67etumX1M/00VcAK8DbgjTgA64mrSPwwHITUb18FGLce6eFmmG4F3gIuowbneNH3QIa+D2gimeDWxno7CJlXAdrVnVQNcwLoncyEEPAB5Cah2QXAIeACuF3PqsnXrpe0BoAJoDRxzU/cSdXQF0DLSGw+/izdBls6Wl8ZxAGo37ltZhumm7pCHbXuL9iH4Ki9HHgm4FFY03hXVgP29k0PpSuBFaDtYFqtyiqhdFvYK0BqFvVbwHg26AogSbllIrpeWiWUbo3uChCbVZpE6RbH6+kUonlXqDGJ0o0xPwOkg2tNonST/pbOMf/xHyKEEEIIIYflB4PmC80utQPwAAAAAElFTkSuQmCC"};
-
-
-  // ============================================================
-  // 외부 오프셋 파티클 시스템 (화려한 이펙트용)
-  // ============================================================
-  function burstParticles(scene, x, y, texKey, count, colorHex, speedMin, speedMax, lifeMin, lifeMax, sizeMin, sizeMax) {
-    for (let i = 0; i < count; i++) {
-      const ang = Phaser.Math.FloatBetween(0, Math.PI * 2);
-      const spd = Phaser.Math.FloatBetween(speedMin, speedMax);
-      const life = Phaser.Math.Between(lifeMin, lifeMax);
-      const sz = Phaser.Math.FloatBetween(sizeMin, sizeMax);
-      const p = scene.add.image(x, y, texKey).setDisplaySize(sz, sz).setDepth(68).setTint(colorHex);
-      const vx = Math.cos(ang) * spd, vy = Math.sin(ang) * spd;
-      scene.tweens.add({
-        targets: p, x: x + vx * life / 400, y: y + vy * life / 400 + life * 0.04,
-        alpha: 0, scale: 0.1, duration: life,
-        ease: "Cubic.easeOut", onComplete: () => p.destroy()
-      });
-    }
-  }
-
-  function offsetBurst(scene, x, y, radius, count, color) {
-    // 오프셋(방사형) 파티클 - 원형 경계에서 발사
-    for (let i = 0; i < count; i++) {
-      const ang = (Math.PI * 2 * i / count) + Phaser.Math.FloatBetween(-0.2, 0.2);
-      const ox = x + Math.cos(ang) * radius * 0.6;
-      const oy = y + Math.sin(ang) * radius * 0.6;
-      const p = scene.add.image(ox, oy, "pSpark").setDisplaySize(10, 10).setDepth(67).setTint(color);
-      scene.tweens.add({
-        targets: p,
-        x: x + Math.cos(ang) * (radius * 1.4 + Phaser.Math.FloatBetween(0, 40)),
-        y: y + Math.sin(ang) * (radius * 1.4 + Phaser.Math.FloatBetween(0, 40)),
-        alpha: 0, scale: 0.15, duration: Phaser.Math.Between(250, 450),
-        ease: "Cubic.easeOut", onComplete: () => p.destroy()
-      });
-    }
-  }
-
-  function streamParticles(scene, sx, sy, ex, ey, count, texKey, color) {
-    // 직선 스트림 파티클 (레이저/빔 효과용)
-    for (let i = 0; i < count; i++) {
-      const t = i / Math.max(1, count - 1);
-      const px = sx + (ex - sx) * t + Phaser.Math.Between(-12, 12);
-      const py = sy + (ey - sy) * t + Phaser.Math.Between(-12, 12);
-      const p = scene.add.image(px, py, texKey).setDisplaySize(
-        Phaser.Math.FloatBetween(6, 14), Phaser.Math.FloatBetween(6, 14)
-      ).setDepth(68).setTint(color).setAlpha(0.9);
-      scene.tweens.add({
-        targets: p, alpha: 0, scale: 0.2,
-        x: px + Phaser.Math.Between(-20, 20), y: py + Phaser.Math.Between(-20, 20),
-        duration: Phaser.Math.Between(120, 260),
-        ease: "Cubic.easeOut", onComplete: () => p.destroy()
-      });
-    }
-  }
-
-  function spiralParticles(scene, x, y, color, turns) {
-    // 나선형 파티클
-    const total = turns * 16;
-    for (let i = 0; i < total; i++) {
-      scene.time.delayedCall(i * 18, () => {
-        const ang = (Math.PI * 2 * i / 16);
-        const r = 8 + i * 2.5;
-        const px = x + Math.cos(ang) * r;
-        const py = y + Math.sin(ang) * r;
-        const p = scene.add.image(px, py, "pSpark").setDisplaySize(9, 9).setDepth(67).setTint(color);
-        scene.tweens.add({
-          targets: p, alpha: 0, scale: 0.1,
-          duration: 300, ease: "Cubic.easeOut", onComplete: () => p.destroy()
-        });
-      });
-    }
-  }
-
-  function levelUpAoeBurst(scene) {
-    // 레벨업 광역기 - 화면 전체 충격파
-    const cx = player.x, cy = player.y;
-    const burstRadius = 320;
-    const damage = 8 + state.level * 1.5;
-
-    // 중앙 플래시
-    const flash = scene.add.circle(cx, cy, 40, 0xffffff, 0.95).setDepth(200);
-    scene.tweens.add({ targets: flash, scale: 12, alpha: 0, duration: 400, ease: "Cubic.easeOut", onComplete: () => flash.destroy() });
-
-    // 충격파 링 3중
-    [1, 1.6, 2.2].forEach((mult, idx) => {
-      scene.time.delayedCall(idx * 80, () => {
-        const ring1 = scene.add.circle(cx, cy, 30, 0x00ffd5, 0).setStrokeStyle(8 - idx * 2, 0x00ffd5, 0.9).setDepth(199 - idx);
-        const ring2 = scene.add.circle(cx, cy, 30, 0xffffff, 0).setStrokeStyle(3, 0xffffff, 0.7).setDepth(200 - idx);
-        scene.tweens.add({
-          targets: [ring1, ring2], scale: mult * burstRadius / 30, alpha: 0,
-          duration: 550, ease: "Cubic.easeOut",
-          onComplete: () => { ring1.destroy(); ring2.destroy(); }
-        });
-      });
-    });
-
-    // 오프셋 파티클 폭발
-    offsetBurst(scene, cx, cy, burstRadius * 0.5, 24, 0x00ffd5);
-    burstParticles(scene, cx, cy, "pStar", 30, 0xffffff, 80, 280, 400, 800, 12, 22);
-    burstParticles(scene, cx, cy, "pEnergy", 40, 0x00ffd5, 60, 220, 300, 700, 8, 18);
-
-    // 화면 흔들림
-    scene.cameras.main.shake(200, 0.012);
-    centerText(scene, "LEVEL UP !", "#00ffd5");
-  }
-
-  function cnum(hex) {
-    return Number("0x" + hex.replace("#", ""));
-  }
-
-  function clamp(v, a, b) {
-    return Math.max(a, Math.min(b, v));
-  }
-
-  function d(x1, y1, x2, y2) {
-    return Phaser.Math.Distance.Between(x1, y1, x2, y2);
-  }
-
-  function aTo(x1, y1, x2, y2) {
-    return Phaser.Math.Angle.Between(x1, y1, x2, y2);
-  }
-
-  function lineDist(px, py, x1, y1, x2, y2) {
-    const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
-    const dot = A * C + B * D;
-    const len = C * C + D * D;
-    let t = len ? dot / len : -1;
-    t = clamp(t, 0, 1);
-    const x = x1 + C * t, y = y1 + D * t;
-    return d(px, py, x, y);
-  }
-
-  function makeCanvasTexture(scene, key, w, h, draw) {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, w, h);
-    draw(ctx, w, h);
-    scene.textures.addCanvas(key, canvas);
-  }
-
-  function glow(ctx, color, blur) {
-    ctx.shadowColor = color;
-    ctx.shadowBlur = blur;
-  }
-
-  function createTextures(scene) {
-    // bulletCore 기본 텍스처
-    makeCanvasTexture(scene, "bulletCore", 32, 32, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      glow(ctx, "#ffffff", 18);
-      ctx.fillStyle="#ffffff";
-      ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill();
-      glow(ctx, "#00ffd5", 8);
-      ctx.fillStyle="rgba(0,255,213,0.5)";
-      ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill();
-    });
-    // 파티클용 스파크 텍스처
-    makeCanvasTexture(scene, "pSpark", 16, 16, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      const g = ctx.createRadialGradient(0,0,0,0,0,7);
-      g.addColorStop(0,"rgba(255,255,255,1)");
-      g.addColorStop(0.4,"rgba(255,220,100,0.8)");
-      g.addColorStop(1,"rgba(255,100,50,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fill();
-    });
-    // 얼음 파티클
-    makeCanvasTexture(scene, "pIce", 14, 14, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      const g = ctx.createRadialGradient(0,0,0,0,0,6);
-      g.addColorStop(0,"rgba(200,240,255,1)");
-      g.addColorStop(1,"rgba(100,200,255,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
-    });
-    // 에너지 파티클
-    makeCanvasTexture(scene, "pEnergy", 14, 14, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      const g = ctx.createRadialGradient(0,0,0,0,0,6);
-      g.addColorStop(0,"rgba(255,255,150,1)");
-      g.addColorStop(1,"rgba(0,255,213,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
-    });
-    // 별 모양 파티클
-    makeCanvasTexture(scene, "pStar", 20, 20, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      ctx.fillStyle="rgba(255,255,255,0.9)";
-      ctx.save(); ctx.rotate(Math.PI/4);
-      ctx.fillRect(-1.5,-8,3,16); ctx.fillRect(-8,-1.5,16,3);
-      ctx.restore();
-      ctx.fillRect(-1.5,-8,3,16); ctx.fillRect(-8,-1.5,16,3);
-    });
-    // void 파티클
-    makeCanvasTexture(scene, "pVoid", 14, 14, (ctx, w, h) => {
-      ctx.translate(w/2,h/2);
-      const g = ctx.createRadialGradient(0,0,0,0,0,6);
-      g.addColorStop(0,"rgba(200,100,255,1)");
-      g.addColorStop(1,"rgba(80,0,160,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
     });
   }
-
-  function buildPixelAvatarDataUrl(img, pixelSize = 20, outputSize = 64) {
-    const srcCanvas = document.createElement("canvas");
-    srcCanvas.width = pixelSize;
-    srcCanvas.height = pixelSize;
-    const sctx = srcCanvas.getContext("2d", { willReadFrequently: true });
-    sctx.clearRect(0,0,pixelSize,pixelSize);
-    const iw = img.naturalWidth || img.width || pixelSize;
-    const ih = img.naturalHeight || img.height || pixelSize;
-    const side = Math.min(iw, ih);
-    const sx = (iw - side) / 2;
-    const sy = (ih - side) / 2;
-    sctx.imageSmoothingEnabled = true;
-    sctx.drawImage(img, sx, sy, side, side, 0, 0, pixelSize, pixelSize);
-
-    const data = sctx.getImageData(0,0,pixelSize,pixelSize);
-    for (let i = 0; i < data.data.length; i += 4) {
-      data.data[i] = Math.min(255, data.data[i] * 1.08);
-      data.data[i + 1] = Math.min(255, data.data[i + 1] * 1.04);
-      data.data[i + 2] = Math.min(255, data.data[i + 2] * 1.08);
-    }
-    sctx.putImageData(data, 0, 0);
-
-    const outCanvas = document.createElement("canvas");
-    outCanvas.width = outputSize;
-    outCanvas.height = outputSize;
-    const octx = outCanvas.getContext("2d");
-    octx.clearRect(0,0,outputSize,outputSize);
-    octx.imageSmoothingEnabled = false;
-    octx.drawImage(srcCanvas, 0, 0, outputSize, outputSize);
-    octx.strokeStyle = "rgba(0,255,213,0.65)";
-    octx.lineWidth = 2;
-    octx.strokeRect(1,1,outputSize-2,outputSize-2);
-    return outCanvas.toDataURL("image/png");
-  }
-
-  function updateAvatarPreviewDom() {
-    const preview = document.getElementById("avatarPreview");
-    const hint = document.getElementById("avatarHint");
-    if (!preview || !hint) return;
-    if (state.customPlayerPreview) {
-      preview.src = state.customPlayerPreview;
-      preview.classList.add("show");
-      hint.innerHTML = "적용 완료. START를 누르면 업로드한 사진의 픽셀 버전으로 플레이합니다.<br>좌우 이동에 따라 자동으로 방향 전환됩니다.";
-    } else {
-      preview.removeAttribute("src");
-      preview.classList.remove("show");
-      hint.textContent = "사진을 넣으면 중앙 기준으로 잘라서 자동 픽셀화하고, 그 이미지를 플레이어 캐릭터로 사용합니다.";
-    }
-  }
-
-  function applyCustomPlayerTexture(scene, dataUrl) {
-    if (!scene || !scene.textures || !dataUrl) return;
-    const key = "playerCustom";
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width || 64;
-      canvas.height = img.height || 64;
-      const ctx = canvas.getContext("2d");
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0);
-      if (scene.textures.exists(key)) scene.textures.remove(key);
-      scene.textures.addCanvas(key, canvas);
-      state.playerTextureKey = key;
-      state.customPlayerPreview = dataUrl;
-      if (player && player.active) {
-        player.setTexture(key);
-        player.setDisplaySize(64,64);
-        player.rotation = 0;
-      }
-      updateAvatarPreviewDom();
-    };
-    img.src = dataUrl;
-  }
-
-  function resetCustomPlayerTexture(scene) {
-    state.playerTextureKey = "playerShip";
-    state.customPlayerPreview = "";
-    if (scene && scene.textures && scene.textures.exists("playerCustom")) scene.textures.remove("playerCustom");
-    if (player && player.active) {
-      player.setTexture("playerShip");
-      player.setDisplaySize(64,64);
-      player.setFlipX(false);
-      player.rotation = 0;
-    }
-    updateAvatarPreviewDom();
-  }
-
-
-  function applyImmediateWeaponBonus(id, before, after) {
-    const gained = Math.max(0, after - before);
-    if (gained <= 0) return;
-
-    if (id === "hsBelly") {
-      for (let i = 0; i < gained; i++) {
-        const oldMax = state.maxHp;
-        state.maxHp = Math.round(state.maxHp * 1.05);
-        state.hp = Math.min(state.maxHp, state.hp + Math.max(5, Math.round((state.maxHp - oldMax) + 3)));
-      }
-      const scene = state.scene;
-      if (scene && state.started) centerText(scene, "MAX HP +5%", "#ffbf5a");
-    }
-  }
-
-  function brainExpMultiplier() {
-    const lv = manager && manager.level ? manager.level("brain") : 0;
-    if (!lv) return 1;
-    return 1.5 + (lv - 1) * 0.1;
-  }
-
-  class WeaponManager {
-    constructor(scene) {
-      this.scene = scene;
-      this.weapons = [];
-      this.fusions = [];
-      this.maxWeapons = 9;
-    }
-    tick(time, delta) {
-      for (const w of this.weapons) w.tick(time, delta);
-      for (const f of this.fusions) f.tick(time, delta);
-    }
-    get(id) { return this.weapons.find(w => w.id === id); }
-    level(id) { return this.get(id)?.level || 0; }
-    addWeapon(id) {
-      const before = this.level(id);
-      const existing = this.get(id);
-      if (existing) {
-        existing.level = Math.min(5, existing.level + 1);
-      } else if (this.weapons.length < this.maxWeapons) {
-        this.weapons.push(new Weapon(this.scene, id));
-      }
-      const after = this.level(id);
-      applyImmediateWeaponBonus(id, before, after);
-      updateWeaponUi();
-    }
-    addFusion(id) {
-      if (!this.fusions.some(f => f.id === id)) this.fusions.push(new Fusion(this.scene, id));
-      updateWeaponUi();
-    }
-    possibleFusions() {
-      return FUSIONS.filter(f => !this.fusions.some(x => x.id === f.id) && f.need.every(id => this.level(id) >= 5));
-    }
-    options() {
-      const result = [];
-      const possibleFusions = Phaser.Utils.Array.Shuffle(this.possibleFusions().slice());
-      for (const f of possibleFusions) {
-        if (result.length < 2) result.push({ ...f, type: "fusion" });
-      }
-
-      const owned = this.weapons.map(w => w.id);
-      const maxed = this.weapons.filter(w => w.level >= 5).map(w => w.id);
-      const pool = [];
-
-      for (const w of WEAPONS) {
-        if (maxed.includes(w.id)) continue;
-        if (owned.includes(w.id)) pool.push({ ...w, type: "upgrade", next: this.level(w.id) + 1 });
-        else if (owned.length < this.maxWeapons) {
-          pool.push({ ...w, type: "new", next: 1 });
-          if (state.level >= 5) pool.push({ ...w, type: "new", next: 1 });
-        }
-      }
-
-      const shuffled = Phaser.Utils.Array.Shuffle(pool);
-      for (const w of shuffled) {
-        if (result.length >= 3) break;
-        if (!result.some(x => x.id === w.id)) result.push(w);
-      }
-
-      if (result.length === 0) {
-        result.push({ id: "heal", name: "응급 회복", color: "#ff6666", desc: "체력을 35 회복", type: "heal" });
-      }
-      return result.slice(0, 3);
-    }
-  }
-
-  class Weapon {
-    constructor(scene, id) {
-      this.scene = scene;
-      this.id = id;
-      this.level = 1;
-      this.last = 0;
-      this.angle = 0;
-      this.parts = [];
-      this.mines = [];
-      this.hitCd = new Map();
-    }
-    dmg() { return DMG[this.id][this.level - 1]; }
-    ready(time, cd) { return time >= this.last + cd; }
-    tick(time, delta) {
-      const id = this.id;
-      if (id === "mg") return this.mg(time);
-      if (id === "missile") return this.missile(time);
-      if (id === "bolt") return this.bolt(time);
-      if (id === "blade") return this.blade(time);
-      if (id === "laser") return this.laser(time);
-      if (id === "hole") return this.hole(time);
-      if (id === "shield") return this.shield(time, delta);
-      if (id === "mine") return this.mine(time);
-      if (id === "ice") return this.ice(time);
-      if (id === "hsBelly") return this.hsBelly(time);
-      if (id === "jjyGlasses") return this.jjyGlasses(time);
-      if (id === "sausage") return this.sausage(time, delta);
-      if (id === "anseongWave") return this.anseongWave(time);
-      if (id === "brain") return this.brain(time);
-      if (id === "cameraFlash") return this.cameraFlash(time);
-      if (id === "stone") return this.stone(time);
-      if (id === "lung") return this.lung(time);
-    }
-    mg(time) {
-      const cd = this.level >= 4 ? 125 : this.level >= 2 ? 165 : 210;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const t = nearestEnemy();
-      if (!t) return;
-      const count = this.level >= 2 ? 2 : 1;
-      for (let i=0;i<count;i++) {
-        this.scene.time.delayedCall(i*32, () => shootBullet(this.scene, t, {
-          color: 0xfff067, speed: 720, size: 5, damage: this.dmg(), pierce: this.level >= 3 ? 1 : 0, trail: true,
-        }));
-      }
-    }
-    missile(time) {
-      const cd = this.level >= 3 ? 470 : 620;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const count = this.level >= 5 ? 4 : this.level >= 2 ? 2 : 1;
-      for (let i=0;i<count;i++) {
-        this.scene.time.delayedCall(i*70, () => {
-          const t = nearestEnemy();
-          if (!t) return;
-          const b = makeBullet(this.scene, player.x, player.y, 0xc59aff, 9);
-          b.damage = this.dmg();
-          b.homing = true;
-          b.target = t;
-          b.speed = 470;
-          b.explode = this.level >= 4 ? 50 : 0;
-        });
-      }
-    }
-    bolt(time) {
-      const cd = this.level >= 3 ? 640 : 880;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const targets = enemiesInRange(player.x, player.y, 780, this.level >= 5 ? 5 : this.level >= 2 ? 2 : 1);
-      for (const e of targets) {
-        lightning(this.scene, e.x, e.y);
-        e.stunUntil = Math.max(e.stunUntil || 0, time + (this.level >= 4 ? 560 : 280));
-        damageEnemy(this.scene, e, this.dmg());
-      }
-    }
-    blade(time) {
-      const cd = this.level >= 3 ? 430 : 600;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const r = this.level >= 4 ? 130 : 96;
-      slash(this.scene, player.x, player.y, state.lastMoveAngle, r, 0xffffff);
-      enemiesInRange(player.x, player.y, r + 24).forEach(e => {
-        damageEnemy(this.scene, e, this.dmg());
-        knock(e, player.x, player.y, this.level >= 4 ? 260 : 180);
-      });
-      if (this.level >= 5) {
-        const t = nearestEnemy();
-        if (t) shootBullet(this.scene, t, { color: 0xff91ff, speed: 560, size: 8, damage: this.dmg()*.7, homing: true, target: t, pierce: 2 });
-      }
-    }
-    laser(time) {
-      const cd = this.level >= 4 ? 620 : 950;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const t = nearestEnemy();
-      if (!t) return;
-      const base = aTo(player.x, player.y, t.x, t.y);
-      const count = this.level >= 5 ? 3 : this.level >= 2 ? 2 : 1;
-      for (let i=0;i<count;i++) {
-        const off = (i - (count-1)/2) * .18;
-        this.scene.time.delayedCall(i*60, () => beam(this.scene, base+off, 840, 32, this.dmg(), 0xff67ff));
-      }
-    }
-    hole(time) {
-      const cd = this.level >= 3 ? 1600 : 2200;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const t = highestEnemy() || nearestEnemy();
-      if (!t) return;
-      gravity(this.scene, t.x, t.y, this.level >= 4 ? 250 : 185, 1200 + this.level*180, this.dmg());
-    }
-    shield(time, delta) {
-      const count = this.level >= 2 ? 2 : 1;
-      while (this.parts.length < count) {
-        this.parts.push(this.scene.add.sprite(player.x, player.y, "assetShield").setDisplaySize(42,42).setTint(0x66ffcc).setDepth(42));
-      }
-      this.angle += delta * .0048;
-      const r = this.level >= 4 ? 124 : 100;
-      for (let i=0;i<this.parts.length;i++) {
-        const p = this.parts[i];
-        const a = this.angle + Math.PI*2*i/this.parts.length;
-        p.setPosition(player.x + Math.cos(a)*r, player.y + Math.sin(a)*r).setRotation(a + Math.PI/2);
-        enemiesInRange(p.x, p.y, 52).forEach(e => {
-          const last = this.hitCd.get(e) || 0;
-          if (time < last + 330) return;
-          this.hitCd.set(e, time);
-          damageEnemy(this.scene, e, this.dmg());
-          knock(e, player.x, player.y, this.level >= 4 ? 280 : 170);
-          ring(this.scene, p.x, p.y, 24, 0x66ffcc);
-          if (this.level >= 5) explosion(this.scene, e.x, e.y, 72, this.dmg()*.45);
-        });
-      }
-    }
-    mine(time) {
-      const cd = this.level >= 2 ? 830 : 1150;
-      if (this.ready(time, cd)) {
-        this.last = time;
-        const a = state.lastMoveAngle + Math.PI + Phaser.Math.FloatBetween(-.6,.6);
-        const m = placeMine(this.scene, player.x + Math.cos(a)*Phaser.Math.Between(55,95), player.y + Math.sin(a)*Phaser.Math.Between(55,95), 0xffcc44);
-        m.damage = this.dmg();
-        m.radius = this.level >= 3 ? 122 : 92;
-        m.chain = this.level >= 4;
-        m.fire = this.level >= 5;
-        this.mines.push(m);
-        if (this.mines.length > 12) this.mines.shift()?.destroy(true);
-      }
-      this.mines = this.mines.filter(m => m.active);
-      for (const m of this.mines) {
-        if (time < m.armed) continue;
-        m.setScale(.95 + Math.sin(time*.012)*.08);
-        if (enemiesInRange(m.x, m.y, 56, 1)[0] || (m.fire && time > m.created + 5200)) detonate(this.scene, m);
-      }
-    }
-    ice(time) {
-      const cd = this.level >= 3 ? 720 : 920;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const targets = enemiesInRange(player.x, player.y, 750, this.level >= 2 ? 2 : 1);
-      for (const e of targets) {
-        const b = makeBullet(this.scene, player.x, player.y, 0x9be7ff, 8);
-        b.damage = this.dmg();
-        b.homing = true;
-        b.target = e;
-        b.speed = 520;
-        b.slow = this.level >= 3 ? .42 : .58;
-        b.freeze = this.level >= 4 ? .3 : 0;
-        b.iceBurst = this.level >= 5;
-      }
-    }
-
-    hsBelly(time) {
-      const cd = this.level >= 3 ? 520 : 700;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const radius = 96 + this.level * 22;
-      const damage = this.dmg();
-      bellyPulse(this.scene, player.x, player.y, radius);
-      enemiesInRange(player.x, player.y, radius).forEach(e => {
-        damageEnemy(this.scene, e, damage);
-        if (!e.active) return;
-        if (!e.isBoss && e.hp <= damage * (this.level >= 4 ? 1.8 : 1.2)) {
-          // 낮은 체력 적은 즉시 흡수 처리. 시각 표현은 비폭력적인 소멸 이펙트로만 표시.
-          killEnemy(this.scene, e);
-        } else if (e.body) {
-          const ang = aTo(e.x, e.y, player.x, player.y);
-          e.body.setVelocity(Math.cos(ang) * 135, Math.sin(ang) * 135);
-        }
-      });
-    }
-
-    jjyGlasses(time) {
-      if (time < this.last + 240) return;
-      this.last = time;
-      const radius = 145 + this.level * 25;
-      enemiesInRange(player.x, player.y, radius).forEach(e => {
-        slow(e, time, 720 + this.level * 130, Math.max(0.32, 0.62 - this.level * 0.055));
-        damageEnemy(this.scene, e, this.dmg());
-      });
-      if (time > (this.last2 || 0) + 850) {
-        this.last2 = time;
-        ring(this.scene, player.x, player.y, radius, 0xaeefff);
-      }
-    }
-
-    sausage(time, delta) {
-      const count = this.level >= 4 ? 2 : 1;
-      while (this.parts.length < count) {
-        this.parts.push(this.scene.add.sprite(player.x, player.y, "assetSausage").setDisplaySize(68, 26).setDepth(43));
-      }
-      this.angle += delta * (0.005 + this.level * 0.00045);
-      const radius = 98 + this.level * 9;
-      for (let i = 0; i < this.parts.length; i++) {
-        const p = this.parts[i];
-        const ang = this.angle + Math.PI * 2 * i / this.parts.length;
-        p.setPosition(player.x + Math.cos(ang) * radius, player.y + Math.sin(ang) * radius).setRotation(ang + Math.PI / 2);
-        enemiesInRange(p.x, p.y, 48).forEach(e => {
-          const key = "saus" + i;
-          if (time < (e[key] || 0)) return;
-          e[key] = time + 260;
-          damageEnemy(this.scene, e, this.dmg());
-          knock(e, player.x, player.y, 150 + this.level * 24);
-          ring(this.scene, p.x, p.y, 22, 0xff8a66);
-        });
-      }
-    }
-
-    anseongWave(time) {
-      const cd = this.level >= 4 ? 900 : 1180;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const waves = this.level >= 3 ? 3 : 2;
-      for (let i = 0; i < waves; i++) {
-        this.scene.time.delayedCall(i * 145, () => {
-          areaWave(this.scene, player.x, player.y, 115 + this.level * 38 + i * 52, this.dmg() * (1 - i * 0.12));
-        });
-      }
-    }
-
-    brain(time) {
-      if (time < this.last + 1400) return;
-      this.last = time;
-      const radius = 60 + this.level * 10;
-      const halo = this.scene.add.circle(player.x, player.y, radius, 0xff8be8, 0).setStrokeStyle(2, 0xff8be8, 0.35).setDepth(41);
-      this.scene.tweens.add({ targets: halo, alpha: 0, scale: 1.25, duration: 430, onComplete: () => halo.destroy() });
-    }
-
-    cameraFlash(time) {
-      const cd = this.level >= 4 ? 2500 : 3200;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const radius = 210 + this.level * 35;
-      cameraFlashEffect(this.scene, radius);
-      enemiesInRange(player.x, player.y, radius).forEach(e => {
-        e.stunUntil = Math.max(e.stunUntil || 0, time + 2000);
-        damageEnemy(this.scene, e, this.dmg());
-      });
-    }
-
-    stone(time) {
-      const cd = this.level >= 3 ? 680 : 900;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const t = nearestEnemy();
-      if (!t) return;
-      const b = makeAssetProjectile(this.scene, "assetStone", player.x, player.y, 32 + this.level * 3, 0xaab3bd);
-      b.damage = this.dmg();
-      b.speed = 440 + this.level * 30;
-      b.radius = 17 + this.level * 2;
-      b.pierce = this.level >= 4 ? 4 : this.level >= 2 ? 2 : 1;
-      b.knockPower = 230 + this.level * 35;
-      b.roll = true;
-      b.life = 2400;
-      const ang = aTo(player.x, player.y, t.x, t.y);
-      b.body.setVelocity(Math.cos(ang) * b.speed, Math.sin(ang) * b.speed);
-    }
-
-    lung(time) {
-      const cd = this.level >= 3 ? 760 : 980;
-      if (!this.ready(time, cd)) return;
-      this.last = time;
-      const target = nearestEnemy();
-      const angle = target ? aTo(player.x, player.y, target.x, target.y) : state.lastMoveAngle;
-      shockwave(this.scene, angle, 220 + this.level * 55, 48 + this.level * 9, this.dmg());
-      if (this.level >= 5) {
-        this.scene.time.delayedCall(120, () => shockwave(this.scene, angle + 0.18, 210, 42, this.dmg() * 0.55));
-        this.scene.time.delayedCall(160, () => shockwave(this.scene, angle - 0.18, 210, 42, this.dmg() * 0.55));
-      }
-    }
-
-  }
-
-  class Fusion {
-    constructor(scene, id) {
-      this.scene = scene;
-      this.id = id;
-      this.last = 0;
-      this.last2 = 0;
-      this.angle = 0;
-      this.parts = [];
-      this.mines = [];
-    }
-    tick(time, delta) {
-      if (this.id === "thunderShield") return this.thunderShield(time, delta);
-      if (this.id === "gravityMine") return this.gravityMine(time);
-      if (this.id === "cryoBeam") return this.cryoBeam(time);
-      if (this.id === "stormWeb") return this.stormWeb(time);
-      if (this.id === "magicBlade") return this.magicBlade(time);
-    }
-    thunderShield(time, delta) {
-      this.angle += delta*.0052;
-      while (this.parts.length < 3) this.parts.push(this.scene.add.sprite(player.x,player.y,"assetShield").setDisplaySize(48,48).setTint(0x66ffff).setDepth(45));
-      for (let i=0;i<3;i++) {
-        const a = this.angle + Math.PI*2*i/3;
-        const p = this.parts[i];
-        p.setPosition(player.x+Math.cos(a)*130, player.y+Math.sin(a)*130).setRotation(a+Math.PI/2);
-        enemiesInRange(p.x,p.y,62).forEach(e => {
-          if (time < (e.thunderHit || 0)) return;
-          e.thunderHit = time + 330;
-          lightning(this.scene, e.x, e.y);
-          damageEnemy(this.scene, e, 6.2);
-          e.stunUntil = Math.max(e.stunUntil || 0, time + 520);
-        });
-      }
-      if (time > this.last2 + 1750) {
-        this.last2 = time;
-        enemiesInRange(player.x, player.y, 850, 5).forEach(e => { lightning(this.scene, e.x, e.y); damageEnemy(this.scene, e, 7.4); });
-      }
-    }
-    gravityMine(time) {
-      if (time >= this.last + 1450) {
-        this.last = time;
-        const t = nearestEnemy();
-        const a = t ? aTo(player.x,player.y,t.x,t.y) : state.lastMoveAngle;
-        const m = placeMine(this.scene, player.x+Math.cos(a)*175, player.y+Math.sin(a)*175, 0xcf76ff);
-        m.damage = 13;
-        m.radius = 190;
-        m.gravity = true;
-        this.mines.push(m);
-        if (this.mines.length > 7) this.mines.shift()?.destroy(true);
-      }
-      this.mines = this.mines.filter(m => m.active);
-      for (const m of this.mines) {
-        if (time < m.armed) continue;
-        enemiesInRange(m.x,m.y,260).forEach(e => {
-          if (e.body) {
-            const a = aTo(e.x,e.y,m.x,m.y);
-            e.body.setVelocity(Math.cos(a)*160, Math.sin(a)*160);
-          }
-        });
-        m.setScale(.95 + Math.sin(time*.015)*.12);
-        if (enemiesInRange(m.x,m.y,92,1)[0] || time > m.created + 4400) detonate(this.scene, m);
-      }
-    }
-    cryoBeam(time) {
-      if (time < this.last + 720) return;
-      this.last = time;
-      const t = nearestEnemy();
-      if (!t) return;
-      const base = aTo(player.x,player.y,t.x,t.y);
-      [-.14,0,.14].forEach((off,i) => this.scene.time.delayedCall(i*70, () => beam(this.scene, base+off, 860, 36, 5.8, 0xaeefff, {ice:true})));
-    }
-    stormWeb(time) {
-      if (time < this.last + 720) return;
-      this.last = time;
-      const targets = enemiesInRange(player.x, player.y, 850, 7);
-      targets.forEach((e,i) => this.scene.time.delayedCall(i*50, () => {
-        if (!e.active) return;
-        lightning(this.scene, e.x,e.y);
-        damageEnemy(this.scene, e, 7.3);
-        e.stunUntil = Math.max(e.stunUntil || 0, time+520);
-        enemiesInRange(e.x,e.y,180,2).forEach(o => { chain(this.scene,e.x,e.y,o.x,o.y,0x66ffff); damageEnemy(this.scene,o,3.1); });
-      }));
-    }
-    magicBlade(time) {
-      if (time < this.last + 520) return;
-      this.last = time;
-      slash(this.scene, player.x, player.y, state.lastMoveAngle, 175, 0xff91ff);
-      enemiesInRange(player.x, player.y, 180).forEach(e => damageEnemy(this.scene, e, 8.4));
-      for (let i=0;i<3;i++) {
-        const t = nearestEnemy();
-        if (t) shootBullet(this.scene, t, { color: 0xff91ff, speed: 600, size: 8, damage: 4.4, homing: true, target: t, pierce: 1 });
-      }
-    }
-  }
-
-  function activeEnemies() {
-    return enemies.children.entries.filter(e => e.active && !e.dead);
-  }
-
-  function enemiesInRange(x, y, r, limit = Infinity) {
-    const r2 = r*r;
-    const arr = [];
-    for (const e of activeEnemies()) {
-      const dx = e.x-x, dy = e.y-y;
-      const dd = dx*dx+dy*dy;
-      if (dd <= r2) {
-        if (limit === Infinity) arr.push(e);
-        else arr.push({e, dd});
-      }
-    }
-    if (limit === Infinity) return arr;
-    arr.sort((a,b)=>a.dd-b.dd);
-    return arr.slice(0,limit).map(v=>v.e);
-  }
-
-  function nearestEnemy() {
-    return enemiesInRange(player.x, player.y, 1200, 1)[0] || null;
-  }
-
-  function highestEnemy() {
-    const arr = activeEnemies();
-    arr.sort((a,b)=>b.hp-a.hp);
-    return arr[0] || null;
-  }
-
-  function makeBullet(scene, x, y, color, size) {
-    const b = scene.add.sprite(x, y, "bulletCore").setTint(color).setDisplaySize(size*2.9, size*2.9).setAlpha(0.96).setDepth(36);
-    scene.physics.add.existing(b);
-    b.body.setCircle(size, -size/2, -size/2);
-    b.radius = size;
-    b.birth = scene.time.now;
-    b.life = 2500;
-    b.damage = 1;
-    b.speed = 500;
-    bullets.add(b);
-    return b;
-  }
-
-  function shootBullet(scene, target, opt) {
-    if (!target || !target.active) return null;
-    const b = makeBullet(scene, player.x, player.y, opt.color, opt.size || 6);
-    Object.assign(b, opt);
-    const ang = aTo(player.x, player.y, target.x, target.y);
-    b.body.setVelocity(Math.cos(ang)*(opt.speed||500), Math.sin(ang)*(opt.speed||500));
-    return b;
-  }
-
-  function updateBullets(scene, time) {
-    const es = activeEnemies();
-    bullets.children.entries.slice().forEach(b => {
-      if (!b.active) return;
-      if (time > b.birth + (b.life||2500)) { b.destroy(); return; }
-      if (b.roll) b.rotation += 0.22;
-      if (b.homing && b.target && b.target.active) scene.physics.moveToObject(b, b.target, b.speed || 500);
-      if (b.trail && Math.random() < .65) trail(scene, b.x, b.y, b.tintTopLeft || 0xffffff, b.radius || 5);
-      for (const e of es) {
-        if (!b.active || !e.active) continue;
-        if (d(b.x,b.y,e.x,e.y) < e.radius + (b.radius||6)) {
-          const wasKilled = damageEnemy(scene, e, b.damage || 1);
-          if (b.slow && e.active) slow(e, time, 1700, b.slow);
-          if (b.freeze && e.active && Math.random() < b.freeze) freeze(e, time, 650);
-          if (b.stun && e.active) e.stunUntil = Math.max(e.stunUntil || 0, time + b.stun);
-          if (b.knockPower && e.active) knock(e, b.x, b.y, b.knockPower);
-          if (b.iceBurst && wasKilled) iceBurst(scene, b.x,b.y,86, b.damage*.55);
-          if (b.explode) explosion(scene, b.x,b.y,b.explode,b.damage*.5);
-          if (b.pierce && b.pierce > 0) b.pierce--; else b.destroy();
-        }
-      }
-    });
-  }
-
-  
-  function beam(scene, angle, len, width, damage, color, opt={}) {
-    const sx = player.x, sy = player.y;
-    const ex = sx + Math.cos(angle) * len, ey = sy + Math.sin(angle) * len;
-    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
-
-    const glowWide = scene.add.rectangle(mx, my, len, width * 1.9, color, 0.12).setRotation(angle).setDepth(55);
-    const glowMid  = scene.add.rectangle(mx, my, len, width * 1.15, color, 0.22).setRotation(angle).setDepth(56);
-    const core     = scene.add.rectangle(mx, my, len, Math.max(6, width * 0.24), 0xffffff, 0.95).setRotation(angle).setDepth(57);
-
-    const startFlash = scene.add.circle(sx, sy, width * 0.9, color, 0.26).setDepth(58);
-    const endFlash   = scene.add.circle(ex, ey, width * 0.75, 0xffffff, 0.18).setDepth(58);
-
-    for (let i = 0; i < 18; i++) {
-      const t = i / 17;
-      const px = sx + (ex - sx) * t + Phaser.Math.Between(-10, 10);
-      const py = sy + (ey - sy) * t + Phaser.Math.Between(-10, 10);
-      const spark = scene.add.image(px, py, "pSpark").setDisplaySize(
-        Phaser.Math.Between(6,13), Phaser.Math.Between(6,13)
-      ).setTint(color).setAlpha(0.85).setDepth(59);
-      scene.tweens.add({
-        targets: spark, alpha: 0, scale: 0.15,
-        x: px + Phaser.Math.Between(-18, 18),
-        y: py + Phaser.Math.Between(-18, 18),
-        duration: 140 + Phaser.Math.Between(0, 140),
-        onComplete: () => spark.destroy(),
-      });
-    }
-    // 빔 시작점/끝점 오프셋 파티클
-    burstParticles(scene, sx, sy, "pEnergy", 6, color, 30, 90, 120, 260, 5, 10);
-    burstParticles(scene, ex, ey, "pSpark", 8, 0xffffff, 40, 110, 140, 300, 4, 9);
-
-    scene.tweens.add({
-      targets: [glowWide, glowMid, core, startFlash, endFlash],
-      alpha: 0,
-      scaleY: 0.24,
-      duration: 200,
-      onComplete: () => { glowWide.destroy(); glowMid.destroy(); core.destroy(); startFlash.destroy(); endFlash.destroy(); }
-    });
-
-    activeEnemies().forEach(e => {
-      if (lineDist(e.x, e.y, sx, sy, ex, ey) < width * 0.9 + e.radius * 0.42) {
-        damageEnemy(scene, e, damage);
-        if (opt.ice && e.active) {
-          slow(e, scene.time.now, 2300, .38);
-          if (Math.random() < .28) freeze(e, scene.time.now, 650);
-        }
-      }
-    });
-  }
-
-
-  
-  function slash(scene, x, y, angle, radius, color) {
-    const arcBack = scene.add.arc(x, y, radius * 1.04, -115, 115, false, color, 0.08)
-      .setStrokeStyle(22, color, 0.25).setRotation(angle).setDepth(54);
-    const arcMain = scene.add.arc(x, y, radius, -105, 105, false, color, 0.14)
-      .setStrokeStyle(12, color, 0.95).setRotation(angle).setDepth(55);
-    const arcCore = scene.add.arc(x, y, radius * 0.98, -100, 100, false, 0xffffff, 0.0)
-      .setStrokeStyle(4, 0xffffff, 0.88).setRotation(angle).setDepth(56);
-
-    const bladeIcon = scene.add.sprite(
-      x + Math.cos(angle) * radius * 0.62,
-      y + Math.sin(angle) * radius * 0.62,
-      "assetBlade"
-    ).setDisplaySize(58, 58).setRotation(angle + Math.PI / 2).setDepth(57);
-
-    const slashGlow = scene.add.circle(
-      x + Math.cos(angle) * radius * 0.48,
-      y + Math.sin(angle) * radius * 0.48,
-      radius * 0.24,
-      color,
-      0.12
-    ).setDepth(54);
-
-    scene.tweens.add({
-      targets: [arcBack, arcMain, arcCore, bladeIcon, slashGlow],
-      alpha: 0,
-      scale: 1.22,
-      duration: 220,
-      ease: "Cubic.easeOut",
-      onComplete: () => { arcBack.destroy(); arcMain.destroy(); arcCore.destroy(); bladeIcon.destroy(); slashGlow.destroy(); }
-    });
-
-    scene.cameras.main.shake(100, .0038);
-    // 슬래시 오프셋 파티클
-    burstParticles(scene, x + Math.cos(angle)*radius*0.5, y + Math.sin(angle)*radius*0.5, "pStar", 8, 0xffffff, 50, 160, 150, 320, 7, 14);
-    burstParticles(scene, x, y, "pEnergy", 6, color, 30, 100, 120, 280, 5, 11);
-  }
-
-
-  
-  function lightning(scene, x, y) {
-    const topY = y - Phaser.Math.Between(280, 380);
-    const points = [];
-    const segments = 9;
-    for (let i = 0; i <= segments; i++) {
-      const t = i / segments;
-      points.push({
-        x: x + (i === 0 || i === segments ? 0 : Phaser.Math.Between(-26, 26)),
-        y: topY + (y - topY) * t
-      });
-    }
-
-    const glow = scene.add.graphics().setDepth(65);
-    const core = scene.add.graphics().setDepth(66);
-
-    const draw = (g, width, c, a) => {
-      g.lineStyle(width, c, a);
-      g.beginPath();
-      g.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) g.lineTo(points[i].x, points[i].y);
-      g.strokePath();
-    };
-
-    draw(glow, 18, 0x66d9ff, 0.18);
-    draw(core, 5, 0xeaffff, 0.96);
-
-    for (let i = 2; i < points.length - 1; i += 2) {
-      const p = points[i];
-      const g = scene.add.graphics().setDepth(66);
-      const bx = p.x + Phaser.Math.Between(-56, 56);
-      const by = p.y + Phaser.Math.Between(24, 70);
-      g.lineStyle(2, 0xcff7ff, 0.82);
-      g.beginPath();
-      g.moveTo(p.x, p.y);
-      g.lineTo((p.x + bx) / 2 + Phaser.Math.Between(-12, 12), (p.y + by) / 2);
-      g.lineTo(bx, by);
-      g.strokePath();
-      scene.tweens.add({ targets: g, alpha: 0, duration: 130, onComplete: () => g.destroy() });
-    }
-
-    const impactGlow = scene.add.circle(x, y, 62, 0x66d9ff, 0.22).setDepth(64);
-    const impactCore = scene.add.circle(x, y, 24, 0xffffff, 0.55).setDepth(67);
-    const impactRing = scene.add.circle(x, y, 24, 0xffffff, 0).setStrokeStyle(4, 0xcff7ff, 0.95).setDepth(67);
-
-    scene.tweens.add({ targets: [glow, core], alpha: 0, duration: 150, onComplete: () => { glow.destroy(); core.destroy(); } });
-    scene.tweens.add({ targets: impactGlow, alpha: 0, scale: 1.7, duration: 220, onComplete: () => impactGlow.destroy() });
-    scene.tweens.add({ targets: impactCore, alpha: 0, scale: 2.1, duration: 180, onComplete: () => impactCore.destroy() });
-    scene.tweens.add({ targets: impactRing, alpha: 0, scale: 2.2, duration: 260, onComplete: () => impactRing.destroy() });
-    // 외부 오프셋 전기 파티클
-    burstParticles(scene, x, y, "pSpark", 10, 0x66d9ff, 40, 140, 150, 320, 5, 12);
-    burstParticles(scene, x, y, "pStar", 5, 0xeaffff, 30, 100, 120, 280, 8, 15);
-  }
-
-
-  function gravity(scene, x, y, radius, duration, damage) {
-    const core = scene.add.circle(x,y,30,0x020006,1).setStrokeStyle(5,0xa06bff,.9).setDepth(61);
-    const field = scene.add.circle(x,y,radius,0xa06bff,.08).setStrokeStyle(3,0xa06bff,.5).setDepth(60);
-    let elapsed=0;
-    const ev = scene.time.addEvent({delay:90,loop:true,callback:()=>{
-      elapsed += 90;
-      // 주기적 나선 파티클
-      if (elapsed % 270 === 0) spiralParticles(scene, x, y, 0xa06bff, 1);
-      if (elapsed % 180 === 0) burstParticles(scene, x, y, "pVoid", 8, 0xa06bff, 20, 80, 200, 400, 5, 11);
-      enemiesInRange(x,y,radius).forEach(e=>{
-        if (e.body) {
-          const ang=aTo(e.x,e.y,x,y);
-          e.body.setVelocity(Math.cos(ang)*145,Math.sin(ang)*145);
-        }
-        damageEnemy(scene,e,damage*.12);
-      });
-      core.setScale(1+Math.sin(elapsed*.02)*.1);
-      if (elapsed >= duration) {
-        ev.destroy();
-        explosion(scene,x,y,radius*.78,damage*1.05);
-        scene.tweens.add({targets:[core,field],alpha:0,scale:1.35,duration:280,onComplete:()=>{core.destroy();field.destroy();}});
-      }
-    }});
-  }
-
-  
-  function explosion(scene, x, y, radius, damage, opt={}) {
-    const baseColor = opt.fire ? 0xff5522 : 0xff8844;
-    const warmColor = opt.fire ? 0xffdd66 : 0xfff0cc;
-    const coreColor = opt.fire ? 0xffffff : 0xfff8cc;
-
-    // 코어 플래시
-    const coreFlash = scene.add.circle(x, y, radius * 0.18, 0xffffff, 0.95).setDepth(62);
-    scene.tweens.add({ targets: coreFlash, scale: 2.8, alpha: 0, duration: 180, ease: "Expo.easeOut", onComplete: () => coreFlash.destroy() });
-
-    // 3중 링
-    [1, 1.3, 1.65].forEach((sc, idx) => {
-      const ringColor = idx === 0 ? 0xffffff : idx === 1 ? warmColor : baseColor;
-      const rr = scene.add.circle(x, y, radius * 0.22, 0, 0).setStrokeStyle(7 - idx * 1.5, ringColor, 0.9 - idx * 0.15).setDepth(61 - idx);
-      scene.tweens.add({ targets: rr, scale: sc * radius / (radius * 0.22), alpha: 0, duration: 280 + idx * 60, ease: "Cubic.easeOut", onComplete: () => rr.destroy() });
-    });
-
-    // 외부 글로우
-    const outer = scene.add.circle(x, y, radius, baseColor, 0.12).setStrokeStyle(5, warmColor, 0.6).setDepth(58);
-    const inner = scene.add.circle(x, y, radius * 0.58, warmColor, 0.22).setDepth(59);
-    scene.tweens.add({ targets: outer, alpha: 0, scale: 1.45, duration: 320, ease: "Cubic.easeOut", onComplete: () => outer.destroy() });
-    scene.tweens.add({ targets: inner, alpha: 0, scale: 1.72, duration: 260, ease: "Cubic.easeOut", onComplete: () => inner.destroy() });
-
-    // 외부 오프셋 파티클
-    offsetBurst(scene, x, y, radius, 16, opt.fire ? 0xff5522 : 0xffaa44);
-    burstParticles(scene, x, y, "pSpark", 22, warmColor, 60, 180, 200, 420, 7, 15);
-    if (opt.fire) burstParticles(scene, x, y, "pSpark", 12, 0xff3300, 30, 120, 350, 600, 5, 11);
-
-    // 방사형 선(스파크라인)
-    for (let i = 0; i < 12; i++) {
-      const ang = Math.PI * 2 * i / 12 + Phaser.Math.FloatBetween(-0.15, 0.15);
-      const len = Phaser.Math.FloatBetween(radius * 0.55, radius * 1.05);
-      const line = scene.add.line(0, 0, x, y, x + Math.cos(ang) * len, y + Math.sin(ang) * len, warmColor, 0.72).setOrigin(0).setLineWidth(2.5).setDepth(61);
-      scene.tweens.add({ targets: line, alpha: 0, scaleX: 1.2, duration: 200, onComplete: () => line.destroy() });
-    }
-
-    enemiesInRange(x, y, radius).forEach(e => {
-      damageEnemy(scene, e, damage);
-      if (opt.fire && e.active) {
-        e.burnUntil = Math.max(e.burnUntil || 0, scene.time.now + 1600);
-        e.burnDmg = Math.max(e.burnDmg || 0, damage * 0.08);
-      }
-    });
-
-    scene.cameras.main.shake(140, .0055);
-  }
-
-
-  function placeMine(scene,x,y,color) {
-    const c = scene.add.container(x,y).setDepth(27);
-    const glow = scene.add.circle(0,0,24,color,.16).setStrokeStyle(2,color,.45);
-    const icon = scene.add.sprite(0,0,"assetMine").setDisplaySize(42,42).setTint(color);
-    c.add([glow,icon]);
-    c.created = scene.time.now;
-    c.armed = scene.time.now + 250;
-    c.radius = 100;
-    c.damage = 4;
-    return c;
-  }
-
-  function detonate(scene,m) {
-    if (!m.active) return;
-    const x=m.x,y=m.y;
-    m.destroy(true);
-    if (m.gravity) gravity(scene,x,y,m.radius*1.15,520,m.damage);
-    else explosion(scene,x,y,m.radius,m.damage,{fire:m.fire});
-    if (m.chain) enemiesInRange(x,y,m.radius*1.6,4).forEach((e,i)=>scene.time.delayedCall(i*75,()=>e.active&&explosion(scene,e.x,e.y,m.radius*.45,m.damage*.35)));
-  }
-
-  
-  function chain(scene, x1, y1, x2, y2, color) {
-    const back = scene.add.line(0, 0, x1, y1, x2, y2, color, 0.16).setOrigin(0).setLineWidth(10).setDepth(53);
-    const mid  = scene.add.line(0, 0, x1, y1, x2, y2, color, 0.35).setOrigin(0).setLineWidth(5).setDepth(54);
-    const core = scene.add.line(0, 0, x1, y1, x2, y2, 0xffffff, 0.95).setOrigin(0).setLineWidth(2).setDepth(55);
-    scene.tweens.add({ targets: [back, mid, core], alpha: 0, duration: 190, onComplete: () => { back.destroy(); mid.destroy(); core.destroy(); } });
-  }
-
-
-  
-  function ring(scene, x, y, r, color) {
-    const rr = scene.add.circle(x, y, r, color, 0.08).setStrokeStyle(3, 0xffffff, 0.72).setDepth(57);
-    const glow = scene.add.circle(x, y, r * 0.72, color, 0.12).setDepth(56);
-    scene.tweens.add({
-      targets: [rr, glow],
-      alpha: 0,
-      scale: 1.9,
-      duration: 220,
-      ease: "Cubic.easeOut",
-      onComplete: () => { rr.destroy(); glow.destroy(); }
-    });
-  }
-
-
-  
-  function trail(scene, x, y, color, size) {
-    const t = scene.add.circle(x, y, size, color, 0.18).setDepth(23);
-    const core = scene.add.circle(x, y, Math.max(1, size * 0.38), 0xffffff, 0.45).setDepth(24);
-    scene.tweens.add({
-      targets: [t, core],
-      alpha: 0,
-      scale: 0.18,
-      duration: 190,
-      onComplete: () => { t.destroy(); core.destroy(); }
-    });
-  }
-
-
-  function iceBurst(scene,x,y,r,damage) {
-    const b = scene.add.circle(x,y,r,0x9be7ff,.12).setStrokeStyle(4,0xcff6ff,.78).setDepth(59);
-    scene.tweens.add({targets:b,alpha:0,scale:1.45,duration:320,onComplete:()=>b.destroy()});
-    enemiesInRange(x,y,r).forEach(e=>{ slow(e,scene.time.now,1800,.42); damageEnemy(scene,e,damage); });
-  }
-
-
-  function makeAssetProjectile(scene, key, x, y, size, tint) {
-    const b = scene.add.sprite(x, y, key).setDisplaySize(size, size).setDepth(37);
-    if (tint) b.setTint(tint);
-    scene.physics.add.existing(b);
-    const r = Math.max(8, size * 0.32);
-    b.body.setCircle(r, b.width / 2 - r, b.height / 2 - r);
-    b.radius = r;
-    b.birth = scene.time.now;
-    b.life = 2400;
-    b.damage = 1;
-    b.speed = 500;
-    bullets.add(b);
-    return b;
-  }
-
-  function bellyPulse(scene, x, y, radius) {
-    const aura = scene.add.circle(x, y, radius, 0xffbf5a, 0.10).setStrokeStyle(4, 0xffdf91, 0.70).setDepth(58);
-    const core = scene.add.sprite(x, y, "assetHsBelly").setDisplaySize(54, 54).setDepth(59);
-    scene.tweens.add({ targets: [aura, core], alpha: 0, scale: 1.32, duration: 300, onComplete: () => { aura.destroy(); core.destroy(); } });
-  }
-
-  function areaWave(scene, x, y, radius, damage) {
-    const wave = scene.add.circle(x, y, radius, 0x55d6ff, 0.04).setStrokeStyle(6, 0x55d6ff, 0.75).setDepth(56);
-    const waveInner = scene.add.circle(x, y, radius * 0.62, 0xaaeeff, 0.08).setStrokeStyle(3, 0xaaeeff, 0.55).setDepth(56);
-    scene.tweens.add({ targets: wave, alpha: 0, scale: 1.28, duration: 440, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });
-    scene.tweens.add({ targets: waveInner, alpha: 0, scale: 1.5, duration: 360, ease: "Cubic.easeOut", onComplete: () => waveInner.destroy() });
-    // 오프셋 파티클
-    offsetBurst(scene, x, y, radius * 0.7, 14, 0x55d6ff);
-    burstParticles(scene, x, y, "pIce", 12, 0xaaeeff, 40, 140, 250, 480, 6, 13);
-    enemiesInRange(x, y, radius).forEach(e => {
-      damageEnemy(scene, e, damage);
-      knock(e, x, y, 180);
-      slow(e, scene.time.now, 650, 0.72);
-    });
-    scene.cameras.main.shake(100, 0.003);
-  }
-
-  function cameraFlashEffect(scene, radius) {
-    const flash = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0xfff6aa, 0.20).setOrigin(0).setScrollFactor(0).setDepth(2100);
-    const ringObj = scene.add.circle(player.x, player.y, radius, 0xfff26b, 0).setStrokeStyle(5, 0xfff26b, 0.72).setDepth(60);
-    scene.tweens.add({ targets: flash, alpha: 0, duration: 160, onComplete: () => flash.destroy() });
-    scene.tweens.add({ targets: ringObj, alpha: 0, scale: 1.18, duration: 330, onComplete: () => ringObj.destroy() });
-  }
-
-  function shockwave(scene, angle, length, width, damage) {
-    const sx = player.x;
-    const sy = player.y;
-    const ex = sx + Math.cos(angle) * length;
-    const ey = sy + Math.sin(angle) * length;
-    const wave = scene.add.rectangle((sx + ex) / 2, (sy + ey) / 2, length, width, 0xff798a, 0.18).setRotation(angle).setDepth(57);
-    const core = scene.add.sprite(sx + Math.cos(angle) * 42, sy + Math.sin(angle) * 42, "assetLung").setDisplaySize(42, 42).setRotation(angle).setDepth(58);
-    scene.tweens.add({ targets: [wave, core], alpha: 0, scaleY: 1.75, duration: 260, onComplete: () => { wave.destroy(); core.destroy(); } });
-    activeEnemies().forEach(e => {
-      if (lineDist(e.x, e.y, sx, sy, ex, ey) < width + e.radius * 0.5) {
-        damageEnemy(scene, e, damage);
-        knock(e, sx, sy, 230);
-      }
-    });
-  }
-
-  function knock(e, fromX, fromY, power) {
-    if (!e.body) return;
-    const ang = aTo(fromX,fromY,e.x,e.y);
-    e.body.setVelocity(Math.cos(ang)*power, Math.sin(ang)*power);
-  }
-
-  function slow(e,time,duration,mult) {
-    e.slowUntil = Math.max(e.slowUntil||0, time+duration);
-    e.slowMult = Math.min(e.slowMult||1, mult);
-    e.setTint(0xaeefff);
-  }
-
-  function freeze(e,time,duration) {
-    e.freezeUntil = Math.max(e.freezeUntil||0, time+duration);
-    e.stunUntil = Math.max(e.stunUntil||0, time+duration);
-    e.setTint(0xeaffff);
-    if (e.body) e.body.setVelocity(0,0);
-  }
-
-  function activeStage() {
-    for (const s of STAGES) if (state.elapsed >= s.from && state.elapsed < s.to) return s;
-    return STAGES[STAGES.length-1];
-  }
-
-  function pickEnemyType() {
-    const pool = state.stage.pool;
-    const weighted = [];
-    pool.forEach(id=>{
-      const t = ENEMIES[id];
-      let w = t.weight;
-      if (state.elapsed < 120 && ["charger","shocker","voidling","brute"].includes(id)) w *= state.diff.spawn >= 2 ? .65 : .42;
-      if (state.elapsed > 240 && ["charger","voidling","brute"].includes(id)) w *= 1.75;
-      if (state.diff.spawn >= 2.5 && ["runner","charger","shocker"].includes(id)) w *= 1.45;
-      for (let i=0;i<Math.max(1,Math.round(w));i++) weighted.push(id);
-    });
-    return Phaser.Utils.Array.GetRandom(weighted);
-  }
-
-  function spawnEnemy(scene, id=null, x=null, y=null, opt={}) {
-    if (activeEnemies().length >= state.diff.cap) return null;
-
-    const boss = opt.boss ? BOSSES[opt.boss] : null;
-    const def = boss || ENEMIES[id || pickEnemyType()];
-
-    if (x === null || y === null) {
-      const ang = Phaser.Math.FloatBetween(0,Math.PI*2);
-      const dist = opt.close ? Phaser.Math.Between(430,720) : Phaser.Math.Between(860,1250);
-      x = player.x + Math.cos(ang)*dist;
-      y = player.y + Math.sin(ang)*dist;
-    }
-
-    const s = scene.add.sprite(x,y,def.tex).setDepth(boss?34:30);
-    s.setDisplaySize(def.r*3.2, def.r*3.2);
-    scene.physics.add.existing(s);
-    s.body.setCircle(def.r, s.width/2-def.r, s.height/2-def.r);
-    s.radius = def.r;
-    s.type = def;
-    s.typeId = id || "grunt";
-    s.isBoss = !!boss;
-    s.bossId = opt.boss || null;
-    s.bossPattern = def.pattern;
-    s.maxHp = Math.round((boss ? def.hp + state.elapsed*1.6 : state.baseEnemyHp*def.hp) * state.stage.hp * (boss ? state.diff.boss : state.diff.hp));
-    s.hp = s.maxHp;
-    s.speed = def.speed;
-    s.dmg = def.dmg;
-    s.expValue = boss ? 28 + state.stageIndex*8 : def.exp;
-    s.nextSpecial = 0;
-    s.nextBoss = scene.time.now + 1500;
-    enemies.add(s);
-
-    if (boss) {
-      state.activeBoss = s;
-      centerText(scene, "BOSS  " + def.label, "#ffdd66");
-    }
-    return s;
-  }
-
-  function updateEnemies(scene,time) {
-    activeEnemies().forEach(e=>{
-      if (!e.body) return;
-
-      if (e.stunUntil && e.stunUntil > time) {
-        e.body.setVelocity(0,0);
-        return;
-      }
-
-      if (e.isBoss) updateBoss(scene,e,time);
-      else updateEnemySkill(scene,e,time);
-
-      if (e.overrideUntil && e.overrideUntil > time) return;
-
-      const slowMult = e.slowUntil && e.slowUntil > time ? (e.slowMult||.55) : 1;
-      if (!e.slowUntil || e.slowUntil <= time) e.clearTint();
-      const pressure = Math.min(1.3,1+state.elapsed/1500);
-      const speed = e.speed * state.diff.speed * state.stage.hp**0.08 * slowMult * pressure * (e.isBoss ? .78 : 1);
-      scene.physics.moveToObject(e, player, speed);
-      e.rotation = Phaser.Math.Angle.RotateTo(e.rotation, aTo(e.x,e.y,player.x,player.y), .08);
-    });
-  }
-
-  function updateEnemySkill(scene,e,time) {
-    if (time < e.nextSpecial) return;
-    const t = e.type;
-    if (t.charge) {
-      e.nextSpecial = time + Phaser.Math.Between(1900,2800);
-      e.overrideUntil = time + 420;
-      const ang = aTo(e.x,e.y,player.x,player.y);
-      e.body.setVelocity(Math.cos(ang)*330, Math.sin(ang)*330);
-      warningRing(scene,e.x,e.y,48,0xffdd55);
-    } else if (t.shock) {
-      e.nextSpecial = time + Phaser.Math.Between(2500,3800);
-      if (d(e.x,e.y,player.x,player.y) < 360) {
-        lightning(scene,player.x,player.y);
-        hitPlayer(scene,4.3*state.diff.dmg);
-      }
-    } else if (t.void) {
-      e.nextSpecial = time + Phaser.Math.Between(3000,4300);
-      warningRing(scene,e.x,e.y,135,0xa06bff,()=> {
-        if (d(e.x,e.y,player.x,player.y) < 135) {
-          hitPlayer(scene,4.2*state.diff.dmg);
-          const ang = aTo(player.x,player.y,e.x,e.y);
-          player.body.setVelocity(Math.cos(ang)*250,Math.sin(ang)*250);
-        }
-      });
-    } else {
-      e.nextSpecial = time + 999999;
-    }
-  }
-
-  function updateBoss(scene,e,time) {
-    if (time < e.nextBoss) return;
-    e.nextBoss = time + Phaser.Math.Between(1900,3000);
-    const p = e.bossPattern === "king" ? Phaser.Utils.Array.GetRandom(["slam","storm","pull"]) : e.bossPattern;
-    if (p === "slam") {
-      warningRing(scene,e.x,e.y,230,0xff315a,()=> {
-        explosion(scene,e.x,e.y,230,7);
-        if (d(e.x,e.y,player.x,player.y)<230) hitPlayer(scene,11*state.diff.dmg);
-      });
-    } else if (p === "storm") {
-      for (let i=0;i<7;i++) scene.time.delayedCall(i*120,()=> {
-        const ang=Phaser.Math.FloatBetween(0,Math.PI*2), dd=Phaser.Math.Between(80,430);
-        const x=player.x+Math.cos(ang)*dd, y=player.y+Math.sin(ang)*dd;
-        warningRing(scene,x,y,52,0x66d9ff,()=>{lightning(scene,x,y); if(d(x,y,player.x,player.y)<62) hitPlayer(scene,6.4*state.diff.dmg);});
-      });
-    } else if (p === "pull") {
-      gravity(scene,e.x,e.y,320,1200,6);
-    }
-  }
-
-  function damageEnemy(scene,e,amount) {
-    if (!e || !e.active || e.dead) return false;
-    e.hp -= e.isBoss ? amount*.78 : amount;
-    hitFlash(scene,e.x,e.y);
-    if (e.hp <= 0) {
-      killEnemy(scene,e);
-      return true;
-    }
-    return false;
-  }
-
-  function killEnemy(scene,e) {
-    if (!e.active || e.dead) return;
-    e.dead = true;
-    state.kills++;
-    ring(scene,e.x,e.y,e.isBoss?70:30,e.isBoss?0xffdd66:0xff3866);
-    // 몹 사망 파티클
-    const deathColor = e.isBoss ? 0xffdd66 : 0xff4466;
-    burstParticles(scene, e.x, e.y, "pSpark", e.isBoss ? 24 : 8, deathColor, 40, e.isBoss ? 200 : 110, 200, 500, 5, e.isBoss ? 16 : 11);
-    if (e.isBoss) { offsetBurst(scene, e.x, e.y, 80, 16, 0xffdd66); spiralParticles(scene, e.x, e.y, 0xffaa44, 2); }
-    if (e.type?.split && !e.isBoss) {
-      for (let i=0;i<2;i++) {
-        const ang=Phaser.Math.FloatBetween(0,Math.PI*2);
-        spawnEnemy(scene,"splitling",e.x+Math.cos(ang)*30,e.y+Math.sin(ang)*30,{close:true});
-      }
-    }
-    for (let i=0;i<Math.max(1,e.expValue||1);i++) spawnOrb(scene,e.x+Phaser.Math.Between(-16,16),e.y+Phaser.Math.Between(-16,16),state.diff.exp);
-    if (e.isBoss) {
-      state.activeBoss = null;
-      centerText(scene,"BOSS DEFEATED","#ffdd66");
-      for (let i=0;i<24;i++) spawnOrb(scene,e.x+Phaser.Math.Between(-120,120),e.y+Phaser.Math.Between(-120,120),state.diff.exp);
-    }
-    e.destroy();
-  }
-
-  function hitFlash(scene,x,y) {
-    const f=scene.add.circle(x,y,14,0xffffff,.55).setDepth(66);
-    const f2=scene.add.circle(x,y,8,0xffaacc,.7).setDepth(67);
-    scene.tweens.add({targets:f,alpha:0,scale:2.0,duration:100,onComplete:()=>f.destroy()});
-    scene.tweens.add({targets:f2,alpha:0,scale:1.6,duration:80,onComplete:()=>f2.destroy()});
-  }
-
-  function spawnOrb(scene,x,y,amount) {
-    const o=scene.add.circle(x,y,7,0x66d9ff,.95).setDepth(29);
-    scene.physics.add.existing(o);
-    o.amount = (amount || 1) * brainExpMultiplier();
-    orbs.add(o);
-  }
-
-  function updateOrbs(scene) {
-    orbs.children.entries.slice().forEach(o=>{
-      if (!o.active) return;
-      const dd=d(o.x,o.y,player.x,player.y);
-      if (dd < 210) scene.physics.moveToObject(o,player,280+(210-dd)*2.2);
-      if (dd < 26) {
-        state.exp += o.amount;
-        o.destroy();
-        if (state.exp >= state.need) levelUp(scene);
-      }
-    });
-  }
-
-  function levelUp(scene) {
-    if (state.choosing || state.dead) return;
-    state.exp -= state.need;
-    state.level++;
-    state.need = Math.floor(state.need*1.36+7);
-    // 렙업마다 광역기 발동
-    levelUpAoeBurst(scene);
-    state.choosing = true;
-    scene.physics.pause();
-    showChoiceDom(scene, manager.options());
-  }
-
-
-  function optionAssetKey(opt) {
-    if (opt.asset) return opt.asset;
-    if (opt.id === "heal") return "assetHeal";
-    const fusion = FUSIONS.find(f => f.id === opt.id);
-    if (fusion && fusion.asset) return fusion.asset;
-    const weapon = WEAPONS.find(w => w.id === opt.id);
-    return weapon && weapon.asset ? weapon.asset : null;
-  }
-
-  function showChoiceDom(scene, opts) {
-    const layer = document.getElementById("choiceLayer");
-    const grid = document.getElementById("choiceGrid");
-    document.getElementById("choiceTitle").textContent = "LEVEL " + state.level;
-    grid.innerHTML = "";
-    opts.forEach(opt => {
-      const btn = document.createElement("button");
-      btn.className = "card" + (opt.type === "fusion" ? " fusion" : "");
-      btn.style.borderColor = opt.color;
-      const tag = opt.type === "fusion" ? "FUSION" : opt.type === "upgrade" ? `UPGRADE Lv.${opt.next}` : opt.type === "heal" ? "RECOVER" : "NEW";
-      const assetKey = optionAssetKey(opt);
-      const img = assetKey && WEAPON_ASSET_DATA[assetKey] ? `<img class="asset-icon" src="${WEAPON_ASSET_DATA[assetKey]}" alt="">` : "";
-      btn.innerHTML = `${img}<div class="tag">${tag}</div><div class="name">${opt.name}</div><div class="desc">${opt.desc}</div>`;
-      btn.addEventListener("click", () => {
-        if (opt.type === "fusion") manager.addFusion(opt.id);
-        else if (opt.type === "heal") state.hp = Math.min(state.maxHp, state.hp + 35);
-        else manager.addWeapon(opt.id);
-        layer.style.display = "none";
-        grid.innerHTML = "";
-        state.choosing = false;
-        scene.physics.resume();
-      }, { once: true });
-      grid.appendChild(btn);
-    });
-    layer.style.display = "flex";
-  }
-
-  function hitPlayer(scene, amount) {
-    if (state.dead || !state.started || state.choosing) return;
-    state.hp -= amount;
-    player.setTint(0xff8888);
-    scene.time.delayedCall(90,()=>player.clearTint());
-    if (state.hp <= 0) {
-      state.hp = 0;
-      gameOver(scene);
-    }
-  }
-
-  function updateContact(scene, delta) {
-    let dps=0;
-    activeEnemies().forEach(e=>{
-      if (d(e.x,e.y,player.x,player.y) < e.radius+20) dps += 12*(e.dmg||1)*(e.isBoss?1.8:1)*state.diff.dmg;
-    });
-    if (dps>0) hitPlayer(scene, Math.min(dps,44)*delta/1000);
-  }
-
-  function gameOver(scene) {
-    if (state.dead) return;
-    state.dead = true;
-    scene.physics.pause();
-    const layer = document.getElementById("choiceLayer");
-    const grid = document.getElementById("choiceGrid");
-    document.getElementById("choiceTitle").textContent = "GAME OVER";
-    grid.innerHTML = `<button class="card selected" id="restartBtn"><div class="tag">RESULT</div><div class="name">Lv.${state.level} · ${state.kills} Kills · ${fmt(state.elapsed)}</div><div class="desc">눌러서 다시 시작</div></button>`;
-    layer.style.display = "flex";
-    document.getElementById("restartBtn").addEventListener("click",()=>location.reload(),{once:true});
-  }
-
-  function warningRing(scene,x,y,r,color,done) {
-    const m=scene.add.circle(x,y,r,color,.02).setStrokeStyle(3,color,.75).setDepth(63);
-    scene.tweens.add({targets:m,scale:{from:.4,to:1.15},alpha:{from:.85,to:.05},duration:380,onComplete:()=>{m.destroy();done&&done();}});
-  }
-
-  function centerText(scene,text,color="#00ffd5") {
-    const t=scene.add.text(scene.scale.width/2,scene.scale.height*.28,text,{fontSize:scene.scale.width<640?"24px":"36px",color,fontStyle:"900",letterSpacing:4,shadow:{blur:18,color,fill:true}}).setOrigin(.5).setScrollFactor(0).setDepth(2000);
-    scene.tweens.add({targets:t,y:"-=24",alpha:0,duration:1600,onComplete:()=>t.destroy()});
-  }
-
-  function spawnLoop(scene, delta) {
-    const pressure = 1 + Math.min(1.75, state.elapsed / 430);
-    const burstPressure = state.elapsed > 180 ? 1.18 : 1.0;
-    const every = Math.max(42, 340 / (state.diff.spawn * state.stage.spawn * pressure * burstPressure));
-    state.spawnAcc += delta;
-    if (state.spawnAcc >= every) {
-      state.spawnAcc = 0;
-      const count = Math.min(22, 2 + Math.floor(state.elapsed / 65) + Math.floor(state.stageIndex * 1.5));
-      for (let i = 0; i < count; i++) spawnEnemy(scene);
-    }
-    if (state.elapsed>0 && state.elapsed%45===0 && scene.minuteWarn !== state.elapsed) {
-      scene.minuteWarn = state.elapsed;
-      centerText(scene,"HORDE INCOMING","#ff4455");
-      scene.time.delayedCall(900,()=>{for(let i=0;i<32+state.stageIndex*12;i++) spawnEnemy(scene,null,null,null,{close:true});});
-    }
-  }
-
-  function updateStage(scene,time) {
-    state.elapsed = Math.floor((time - state.startTime)/1000);
-    const old = state.stageIndex;
-    state.stage = activeStage();
-    state.stageIndex = STAGES.indexOf(state.stage);
-    if (old !== state.stageIndex) {
-      centerText(scene, "STAGE " + (state.stageIndex+1) + " — " + state.stage.name);
-      scene.cameras.main.setBackgroundColor(state.stage.tint);
-    }
-    if (state.stage.boss && state.elapsed >= state.stage.bossAt) {
-      const key = state.stage.name + state.stage.boss;
-      if (!state.bossSpawned.has(key)) {
-        state.bossSpawned.add(key);
-        spawnEnemy(scene,null,null,null,{boss:state.stage.boss});
-      }
-    }
-  }
-
-  function createPlayer(scene) {
-    player = scene.add.sprite(0,0,(state.playerTextureKey || "playerShip")).setDisplaySize(64,64).setDepth(40);
-    scene.physics.add.existing(player);
-    player.body.setCircle(22, player.width/2-22, player.height/2-22);
-    // FIX V6: Phaser Sprite에는 setDamping()이 없다. 잘못 호출하면 시작 화면에서 멈춘다.
-    if (player.body && typeof player.body.setDamping === "function") {
-      player.body.setDamping(true);
-    }
-  }
-
-  function movePlayer(scene) {
-    const v = new Phaser.Math.Vector2(0,0);
-    if (keys.left.isDown || keys.a.isDown) v.x -= 1;
-    if (keys.right.isDown || keys.d.isDown) v.x += 1;
-    if (keys.up.isDown || keys.w.isDown) v.y -= 1;
-    if (keys.down.isDown || keys.s.isDown) v.y += 1;
-    if (state.joystick.lengthSq() > .01) v.add(state.joystick);
-    if (v.lengthSq() > 0) {
-      v.normalize();
-      state.lastMoveAngle = Math.atan2(v.y,v.x);
-      if (state.playerTextureKey === "playerCustom") {
-        player.rotation = 0;
-        player.setFlipX(v.x < -0.08);
-      } else {
-        player.setFlipX(false);
-        player.rotation = Phaser.Math.Angle.RotateTo(player.rotation,state.lastMoveAngle,.18);
-      }
-      player.body.setVelocity(v.x*245,v.y*245);
-      if (Math.random()<.35) trail(scene,player.x-Math.cos(state.lastMoveAngle)*26,player.y-Math.sin(state.lastMoveAngle)*26,0x00ffd5,10);
-    } else {
-      player.body.setVelocity(0,0);
-      if (state.playerTextureKey === "playerCustom") player.rotation = 0;
-    }
-  }
-
-  function createBackground(scene) {
-    for (let i=0;i<480;i++) {
-      const bright = Math.random() < 0.08;
-      const col = bright ? Phaser.Utils.Array.GetRandom([0xffffff,0x00ffd5,0xaad4ff,0xffdd88]) : 0x7ecfc0;
-      const s=scene.add.circle(Phaser.Math.Between(-1700,1700),Phaser.Math.Between(-1700,1700),Phaser.Math.FloatBetween(bright?1.8:0.8,bright?3.5:2.2),col,Phaser.Math.FloatBetween(bright?.18:.06,bright?.55:.28)).setDepth(-100);
-      bgStars.push(s);
-    }
-    for (let i=0;i<14;i++) {
-      const n=scene.add.circle(Phaser.Math.Between(-1400,1400),Phaser.Math.Between(-1400,1400),Phaser.Math.Between(140,380),[0x14234a,0x2a1244,0x0a1a2e,0x1a0a2a][i%4],.09).setDepth(-101);
-      bgStars.push(n);
-    }
-  }
-
-  function updateBackground(scene) {
-    const cam=scene.cameras.main;
-    const cx=cam.scrollX+scene.scale.width/2, cy=cam.scrollY+scene.scale.height/2;
-    bgStars.forEach(s=>{
-      if(s.x<cx-1900)s.x+=3800;if(s.x>cx+1900)s.x-=3800;
-      if(s.y<cy-1900)s.y+=3800;if(s.y>cy+1900)s.y-=3800;
-    });
-  }
-
-  function createUi(scene) {
-    ui.level=scene.add.text(16,12,"Lv.1",{fontSize:"22px",color:"#fff",fontStyle:"bold"}).setScrollFactor(0).setDepth(1000);
-    ui.stage=scene.add.text(scene.scale.width/2,14,"",{fontSize:"13px",color:"#8df7ff",fontStyle:"bold"}).setOrigin(.5,0).setScrollFactor(0).setDepth(1000);
-    ui.time=scene.add.text(scene.scale.width-16,12,"00:00",{fontSize:"16px",color:"#d8deea"}).setOrigin(1,0).setScrollFactor(0).setDepth(1000);
-    ui.weapons=scene.add.text(16,44,"",{fontSize:"12px",color:"#aab8c8",wordWrap:{width:Math.min(540,scene.scale.width-32)}}).setScrollFactor(0).setDepth(1000);
-    ui.hpBg=scene.add.rectangle(16,scene.scale.height-30,190,12,0x330000,.72).setOrigin(0).setScrollFactor(0).setDepth(1000);
-    ui.hp=scene.add.rectangle(16,scene.scale.height-30,190,12,0x44ff66,.92).setOrigin(0).setScrollFactor(0).setDepth(1001);
-    ui.expBg=scene.add.rectangle(16,scene.scale.height-12,scene.scale.width-32,6,0x111827,.9).setOrigin(0).setScrollFactor(0).setDepth(1000);
-    ui.exp=scene.add.rectangle(16,scene.scale.height-12,0,6,0x66d9ff,.95).setOrigin(0).setScrollFactor(0).setDepth(1001);
-    ui.bossText=scene.add.text(scene.scale.width/2,scene.scale.height-62,"",{fontSize:"13px",color:"#ffdd66",fontStyle:"bold"}).setOrigin(.5).setScrollFactor(0).setDepth(1002).setVisible(false);
-    ui.bossBg=scene.add.rectangle(scene.scale.width/2-220,scene.scale.height-44,440,10,0x332211,.8).setOrigin(0).setScrollFactor(0).setDepth(1000).setVisible(false);
-    ui.boss=scene.add.rectangle(scene.scale.width/2-220,scene.scale.height-44,440,10,0xffdd66,.95).setOrigin(0).setScrollFactor(0).setDepth(1001).setVisible(false);
-    createJoystick(scene);
-  }
-
-  function updateWeaponUi() {
-    if (!ui.weapons || !manager) return;
-    const w = manager.weapons.map(x => `${WEAPONS.find(a=>a.id===x.id)?.name || x.id}${x.level}`).join("  ");
-    const f = manager.fusions.map(x => `[${FUSIONS.find(a=>a.id===x.id)?.name || x.id}]`).join("  ");
-    ui.weapons.setText(w + (f ? "\n" + f : ""));
-  }
-
-  function updateUi(scene) {
-    ui.level.setText(`Lv.${state.level}`);
-    ui.stage.setText(`STAGE ${state.stageIndex+1} ${state.stage.name} · ${state.diff.name}`);
-    ui.time.setText(fmt(state.elapsed));
-    const hpRatio = clamp(state.hp/state.maxHp,0,1);
-    ui.hp.width = 190*hpRatio;
-    ui.hp.setFillStyle(hpRatio<.3?0xff4455:hpRatio<.6?0xffcc44:0x44ff66);
-    ui.exp.width = (scene.scale.width-32)*clamp(state.exp/state.need,0,1);
-
-    if (state.activeBoss && state.activeBoss.active) {
-      const b=state.activeBoss, ratio=clamp(b.hp/b.maxHp,0,1), w=Math.min(440,scene.scale.width-40), x=scene.scale.width/2-w/2;
-      ui.bossText.setVisible(true).setPosition(scene.scale.width/2,scene.scale.height-62).setText(`${b.type.label}  ${Math.ceil(Math.max(0,b.hp))}/${b.maxHp}`);
-      ui.bossBg.setVisible(true).setPosition(x,scene.scale.height-44).setSize(w,10);
-      ui.boss.setVisible(true).setPosition(x,scene.scale.height-44).setSize(w*ratio,10);
-    } else {
-      ui.bossText.setVisible(false); ui.bossBg.setVisible(false); ui.boss.setVisible(false);
-    }
-  }
-
-  function createJoystick(scene) {
-    let baseX = 0, baseY = 0;
-    joyBase = scene.add.circle(0,0,60,0xffffff,.065).setStrokeStyle(2,0x9fb8c8,.32).setScrollFactor(0).setDepth(1100).setVisible(false);
-    joyKnob = scene.add.circle(0,0,24,0x00ffd5,.28).setStrokeStyle(2,0x00ffd5,.58).setScrollFactor(0).setDepth(1101).setVisible(false);
-
-    const resetStick = () => {
-      activeTouchId = null;
-      state.joystick.set(0,0);
-      joyBase.setVisible(false);
-      joyKnob.setVisible(false);
-    };
-
-    scene.input.on("pointerdown", p => {
-      if (state.choosing || state.dead) return;
-      // FIX V6: 화면 어디를 터치하든 그 위치가 조이스틱 중심이 된다.
-      activeTouchId = p.id;
-      baseX = p.x;
-      baseY = p.y;
-      joyBase.setPosition(baseX, baseY).setVisible(true);
-      joyKnob.setPosition(baseX, baseY).setVisible(true);
-      state.joystick.set(0,0);
-    });
-
-    scene.input.on("pointerup", p => {
-      if (p.id === activeTouchId) resetStick();
-    });
-
-    scene.input.on("pointermove", p => {
-      if (p.id !== activeTouchId) return;
-      const dx = p.x - baseX;
-      const dy = p.y - baseY;
-      const len = Math.hypot(dx, dy);
-      const max = 54;
-      const nx = len ? dx / len : 0;
-      const ny = len ? dy / len : 0;
-      const mag = Math.min(max, len);
-      joyKnob.setPosition(baseX + nx * mag, baseY + ny * mag);
-      state.joystick.set(nx * Math.min(1, len / max), ny * Math.min(1, len / max));
-    });
-
-    scene.input.on("pointerout", p => {
-      if (p.id === activeTouchId) resetStick();
-    });
-
-    scene.input.on("pointercancel", p => {
-      if (p.id === activeTouchId) resetStick();
-    });
-  }
-
-  function fmt(sec) {
-    const m=String(Math.floor(sec/60)).padStart(2,"0");
-    const s=String(sec%60).padStart(2,"0");
-    return `${m}:${s}`;
-  }
-
-  function setupStartDom(scene) {
-    const layer = document.getElementById("startLayer");
-    const grid = document.getElementById("difficultyGrid");
-    grid.innerHTML = "";
-    const bootError = document.getElementById("bootError");
-    if (bootError) bootError.style.display = "none";
-    Object.entries(DIFFS).forEach(([id,diff])=>{
-      const btn=document.createElement("button");
-      btn.className="card"+(id===state.diffId?" selected":"");
-      btn.dataset.id=id;
-      btn.innerHTML=`<div class="tag">${diff.name}</div><div class="name">${diff.name}</div><div class="desc">${diff.sub}</div>`;
-      btn.addEventListener("click",()=>{
-        state.diffId=id; state.diff=diff;
-        [...grid.children].forEach(c=>c.classList.remove("selected"));
-        btn.classList.add("selected");
-      });
-      grid.appendChild(btn);
-    });
-
-    const fileInput = document.getElementById("playerPhotoInput");
-    const resetBtn = document.getElementById("avatarResetButton");
-    if (fileInput && !fileInput.dataset.bound) {
-      fileInput.dataset.bound = "1";
-      fileInput.addEventListener("change", (ev) => {
-        const file = ev.target.files && ev.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            const dataUrl = buildPixelAvatarDataUrl(img, 20, 64);
-            applyCustomPlayerTexture(scene, dataUrl);
-          };
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    if (resetBtn && !resetBtn.dataset.bound) {
-      resetBtn.dataset.bound = "1";
-      resetBtn.addEventListener("click", () => resetCustomPlayerTexture(scene));
-    }
-
-    updateAvatarPreviewDom();
-    document.getElementById("startButton").onclick = () => {
-      layer.style.display="none";
-      startRun(scene);
-    };
-    layer.style.display="flex";
-  }
-
-  function startRun(scene) {
-    state.started=true;
-    state.dead=false;
-    state.choosing=false;
-    state.startTime=scene.time.now;
-    state.elapsed=0;
-    state.hp=state.maxHp;
-    state.level=1;
-    state.exp=0;
-    state.need=24;
-    state.kills=0;
-    state.baseEnemyHp=Math.max(4,Math.round(4.2*state.diff.hp));
-    state.stage=STAGES[0];
-    state.stageIndex=0;
-    state.spawnAcc=0;
-    state.bossSpawned.clear();
-    state.activeBoss=null;
-    manager = new WeaponManager(scene);
-    manager.addWeapon("mg");
-    scene.physics.resume();
-    centerText(scene,"STAGE 1 — " + state.stage.name);
-  }
-
-  function updateDots(scene,time) {
-    activeEnemies().forEach(e=>{
-      if(e.burnUntil && e.burnUntil>time && time>(e.nextBurn||0)){
-        e.nextBurn=time+260;
-        damageEnemy(scene,e,e.burnDmg||.7);
-      }
-      if ((!e.slowUntil || e.slowUntil <= time) && (!e.freezeUntil || e.freezeUntil <= time) && !e.isBoss) {
-        e.clearTint();
-      }
-    });
-  }
-
-  class MainScene extends Phaser.Scene {
-    constructor(){ super("Main"); }
-
-    preload() {
-      for (const [key, dataUrl] of Object.entries(KENNEY_ASSET_DATA)) {
-        this.load.image(key, dataUrl);
-      }
-      for (const [key, dataUrl] of Object.entries(WEAPON_ASSET_DATA)) {
-        this.load.image(key, dataUrl);
-      }
-    }
-
-    create() {
-      state.scene=this;
-      this.cameras.main.setBackgroundColor("#06131a");
-      createTextures(this);
-      createBackground(this);
-      enemies=this.physics.add.group();
-      bullets=this.physics.add.group();
-      orbs=this.physics.add.group();
-      createPlayer(this);
-      createUi(this);
-      keys=this.input.keyboard.addKeys({w:"W",a:"A",s:"S",d:"D",up:"UP",left:"LEFT",down:"DOWN",right:"RIGHT"});
-      manager = new WeaponManager(this);
-      this.cameras.main.startFollow(player,true,.08,.08);
-      this.cameras.main.setZoom(1);
-      this.physics.pause();
-      setupStartDom(this);
-    }
-    update(time,delta) {
-      updateBackground(this);
-      if (!state.started || state.choosing || state.dead) { updateUi(this); return; }
-      updateStage(this,time);
-      movePlayer(this);
-      spawnLoop(this,delta);
-      updateEnemies(this,time);
-      updateDots(this,time);
-      manager.tick(time,delta);
-      updateBullets(this,time);
-      updateOrbs(this);
-      updateContact(this,delta);
-      updateUi(this);
-    }
-  }
-
-  const config = {
-    type: Phaser.AUTO,
-    parent: "game",
-    width: window.innerWidth,
-    height: window.innerHeight,
-    backgroundColor: "#03050a",
-    physics: { default: "arcade", arcade: { gravity: { y: 0 }, debug: false } },
-    scene: [MainScene],
-    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    render: { antialias: true, pixelArt: false, roundPixels: false },
-  };
-
-  new Phaser.Game(config);
-})();
 </script>
 </body>
 </html>
