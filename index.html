@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Abyss Walker Kenney Assets V4</title>
+<title>Abyss Walker HP Balance V10</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 <style>
   html, body {
@@ -24,6 +24,8 @@
   }
   canvas {
     display: block;
+    image-rendering: auto;
+    filter: saturate(1.08) contrast(1.04);
   }
   .dom-layer {
     position: fixed;
@@ -72,7 +74,7 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
   .choices {
@@ -150,6 +152,77 @@
     font-size: 12px;
   }
 
+
+  .avatar-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,255,213,.26);
+    background: rgba(4,16,24,.68);
+  }
+  .avatar-title {
+    font-size: 13px;
+    color: #d6f5ff;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: .6px;
+  }
+  .avatar-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .upload-btn {
+    min-width: 132px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,255,213,.6);
+    background: rgba(0,255,213,.10);
+    color: #aefdf2;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .upload-btn.secondary {
+    border-color: rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+    color: #d5dce4;
+  }
+  .upload-btn input { display:none; }
+  .avatar-preview-wrap {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    min-height: 82px;
+  }
+  .avatar-preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,255,213,.35);
+    background: rgba(255,255,255,.04);
+    object-fit: contain;
+    image-rendering: pixelated;
+    display: none;
+    box-shadow: 0 0 20px rgba(0,255,213,.18);
+  }
+  .avatar-preview.show {
+    display: block;
+  }
+  .avatar-hint {
+    max-width: 320px;
+    text-align: left;
+    color: #90a6b5;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
   .asset-icon {
     width: 46px;
     height: 46px;
@@ -206,9 +279,20 @@
 <div id="startLayer" class="dom-layer" style="display:flex">
   <div class="panel">
     <h1 class="title">ABYSS</h1>
-    <div class="subtitle">KENNEY ASSET SURVIVOR · 난이도를 선택하고 시작</div>
-    <div class="sponsor">후원자 한상신님 감사합니다</div>
+    <div class="subtitle">HP BALANCE SURVIVOR V10 · 몹 체력 재조정</div>
+    <div class="sponsor">후원자 한상신님 감사합니다 · V10 몹 체력 감소</div>
     <div id="difficultyGrid" class="grid"><div class="fallback-loading">게임 UI 불러오는 중...</div></div>
+    <div class="avatar-box">
+      <div class="avatar-title">플레이어 사진 업로드 · 자동 픽셀화</div>
+      <div class="avatar-row">
+        <label class="upload-btn">사진 선택<input id="playerPhotoInput" type="file" accept="image/*"></label>
+        <button id="avatarResetButton" type="button" class="upload-btn secondary">기본 캐릭터 사용</button>
+      </div>
+      <div class="avatar-preview-wrap">
+        <img id="avatarPreview" class="avatar-preview" alt="player preview">
+        <div id="avatarHint" class="avatar-hint">사진을 넣으면 중앙 기준으로 잘라서 자동 픽셀화하고, 그 이미지를 플레이어 캐릭터로 사용합니다.</div>
+      </div>
+    </div>
     <div id="bootError" class="error-box"></div>
     <button id="startButton" class="start">START</button>
     <div class="small">WASD / 방향키 / 왼쪽 화면 조이스틱 이동 · 공격은 자동<br>Character/monster sprites: Kenney Tiny Dungeon CC0</div>
@@ -230,7 +314,7 @@ window.addEventListener("error", function(e) {
   if (layer) layer.style.display = "flex";
   if (box) {
     box.style.display = "block";
-    box.textContent = "실행 오류: " + (e.message || "알 수 없는 오류") + " / 브라우저 새로고침 또는 GitHub Pages·Netlify 배포 실행을 권장.";
+    box.textContent = "실행 오류: " + (e.message || "알 수 없는 오류") + " / V6에서 player.setDamping 오류 제거 완료. 그래도 오류가 뜨면 이 문구 전체를 캡처해서 보내기.";
   }
 });
 window.addEventListener("unhandledrejection", function(e) {
@@ -251,37 +335,99 @@ window.addEventListener("unhandledrejection", function(e) {
   if (!window.Phaser) { throw new Error("Phaser 라이브러리 로드 실패. 인터넷 연결 또는 배포 링크 실행 필요"); }
 
   const DIFFS = {
-    easy:      { name: "EASY",      sub: "편하게 성장", hp: .75, speed: .88, dmg: .72, spawn: .78, boss: .75, exp: 1.28, cap: 180 },
-    normal:    { name: "NORMAL",    sub: "기본",       hp: 1.0, speed: 1.0, dmg: 1.0, spawn: 1.0, boss: 1.0, exp: 1.0, cap: 230 },
-    hard:      { name: "HARD",      sub: "압박 강함",   hp: 1.32, speed: 1.12, dmg: 1.25, spawn: 1.25, boss: 1.35, exp: .92, cap: 285 },
-    nightmare: { name: "NIGHTMARE", sub: "물량 지옥",   hp: 1.72, speed: 1.24, dmg: 1.58, spawn: 1.58, boss: 1.85, exp: .84, cap: 330 },
+    story: {
+      name: "STORY",
+      sub: "입문용 · 몹 피 낮음",
+      hp: .62,
+      speed: .92,
+      dmg: .78,
+      spawn: 1.08,
+      boss: .65,
+      exp: 1.30,
+      cap: 230
+    },
+    normal: {
+      name: "NORMAL",
+      sub: "많이 나오지만 잘 죽음",
+      hp: .82,
+      speed: 1.05,
+      dmg: 1.02,
+      spawn: 1.35,
+      boss: .86,
+      exp: 1.05,
+      cap: 290
+    },
+    hard: {
+      name: "HARD",
+      sub: "물량 압박 중심",
+      hp: 1.05,
+      speed: 1.16,
+      dmg: 1.22,
+      spawn: 1.72,
+      boss: 1.12,
+      exp: .96,
+      cap: 350
+    },
+    expert: {
+      name: "EXPERT",
+      sub: "몹은 많고 보스는 단단함",
+      hp: 1.30,
+      speed: 1.27,
+      dmg: 1.45,
+      spawn: 2.08,
+      boss: 1.42,
+      exp: .90,
+      cap: 430
+    },
+    nightmare: {
+      name: "NIGHTMARE",
+      sub: "물량+속도 난이도",
+      hp: 1.62,
+      speed: 1.40,
+      dmg: 1.78,
+      spawn: 2.55,
+      boss: 1.88,
+      exp: .84,
+      cap: 520
+    },
+    abyss: {
+      name: "ABYSS",
+      sub: "최고난도 · 피통보다 물량",
+      hp: 2.05,
+      speed: 1.56,
+      dmg: 2.22,
+      spawn: 3.15,
+      boss: 2.55,
+      exp: .78,
+      cap: 640
+    },
   };
 
   const STAGES = [
-    { name: "외곽 심연",      from: 0,   to: 90,       tint: 0x06131a, pool: ["grunt", "runner"], spawn: 1,    hp: 1,    boss: null,         bossAt: 0 },
-    { name: "백골 지대",      from: 90,  to: 210,      tint: 0x140c18, pool: ["grunt", "runner", "tank", "splitter"], spawn: 1.22, hp: 1.2,  boss: "butcher",    bossAt: 110 },
-    { name: "뇌전 폐허",      from: 210, to: 390,      tint: 0x071827, pool: ["runner", "tank", "charger", "shocker"], spawn: 1.45, hp: 1.48, boss: "stormGolem", bossAt: 245 },
-    { name: "공허의 고리",    from: 390, to: 630,      tint: 0x120820, pool: ["grunt", "tank", "charger", "shocker", "voidling"], spawn: 1.7, hp: 1.82, boss: "voidEye", bossAt: 435 },
-    { name: "최종 심연",      from: 630, to: Infinity, tint: 0x19070b, pool: ["runner", "tank", "charger", "shocker", "voidling", "brute"], spawn: 2.05, hp: 2.3, boss: "abyssKing", bossAt: 680 },
+    { name: "외곽 심연",      from: 0,   to: 75,       tint: 0x06131a, pool: ["grunt", "runner"], spawn: 1.18, hp: .88, boss: null,         bossAt: 0 },
+    { name: "백골 지대",      from: 75,  to: 180,      tint: 0x140c18, pool: ["grunt", "runner", "tank", "splitter"], spawn: 1.55, hp: 1.02, boss: "butcher",    bossAt: 92 },
+    { name: "뇌전 폐허",      from: 180, to: 330,      tint: 0x071827, pool: ["runner", "tank", "charger", "shocker"], spawn: 1.95, hp: 1.18, boss: "stormGolem", bossAt: 210 },
+    { name: "공허의 고리",    from: 330, to: 540,      tint: 0x120820, pool: ["grunt", "tank", "charger", "shocker", "voidling"], spawn: 2.35, hp: 1.38, boss: "voidEye", bossAt: 375 },
+    { name: "최종 심연",      from: 540, to: Infinity, tint: 0x19070b, pool: ["runner", "tank", "charger", "shocker", "voidling", "brute"], spawn: 2.90, hp: 1.62, boss: "abyssKing", bossAt: 595 },
   ];
 
   const ENEMIES = {
-    grunt:    { label: "그런트", tex: "enemyGrunt",    hp: 1,    r: 19, speed: 88,  dmg: 1,    exp: 1, weight: 48 },
-    runner:   { label: "러너",   tex: "enemyRunner",   hp: .62,  r: 15, speed: 138, dmg: .72,  exp: 1, weight: 28 },
-    tank:     { label: "탱커",   tex: "enemyTank",     hp: 2.75, r: 28, speed: 58,  dmg: 1.35, exp: 2, weight: 15 },
-    splitter: { label: "분열체", tex: "enemySplitter", hp: 1.15, r: 19, speed: 82,  dmg: .82,  exp: 1, weight: 13, split: true },
-    charger:  { label: "돌진체", tex: "enemyCharger",  hp: 1.28, r: 20, speed: 94,  dmg: 1.25, exp: 2, weight: 14, charge: true },
-    shocker:  { label: "감전체", tex: "enemyShocker",  hp: 1.05, r: 19, speed: 88,  dmg: 1.05, exp: 2, weight: 10, shock: true },
-    voidling: { label: "공허체", tex: "enemyVoid",     hp: 1.7,  r: 22, speed: 80,  dmg: 1.18, exp: 2, weight: 9,  void: true },
-    brute:    { label: "브루트", tex: "enemyBrute",    hp: 4.4,  r: 34, speed: 55,  dmg: 1.8,  exp: 4, weight: 7 },
+    grunt:    { label: "그런트", tex: "enemyGrunt",    hp: .78,  r: 19, speed: 94,  dmg: 1.05, exp: 1, weight: 58 },
+    runner:   { label: "러너",   tex: "enemyRunner",   hp: .52,  r: 15, speed: 152, dmg: .82,  exp: 1, weight: 38 },
+    tank:     { label: "탱커",   tex: "enemyTank",     hp: 2.25, r: 28, speed: 64,  dmg: 1.48, exp: 2, weight: 20 },
+    splitter: { label: "분열체", tex: "enemySplitter", hp: .92,  r: 19, speed: 92,  dmg: .92,  exp: 1, weight: 18, split: true },
+    charger:  { label: "돌진체", tex: "enemyCharger",  hp: 1.06, r: 20, speed: 108, dmg: 1.42, exp: 2, weight: 18, charge: true },
+    shocker:  { label: "감전체", tex: "enemyShocker",  hp: .92,  r: 19, speed: 98,  dmg: 1.20, exp: 2, weight: 14, shock: true },
+    voidling: { label: "공허체", tex: "enemyVoid",     hp: 1.42, r: 22, speed: 91,  dmg: 1.35, exp: 2, weight: 13, void: true },
+    brute:    { label: "브루트", tex: "enemyBrute",    hp: 3.65, r: 34, speed: 61,  dmg: 2.05, exp: 4, weight: 10 },
     splitling:{ label: "새끼",   tex: "enemyRunner",   hp: .35,  r: 12, speed: 145, dmg: .45,  exp: 0, weight: 0 },
   };
 
   const BOSSES = {
-    butcher:    { label: "도살자",    tex: "bossButcher",    hp: 260,  r: 76,  speed: 42, dmg: 2.2, pattern: "slam" },
-    stormGolem: { label: "폭풍 골렘", tex: "bossStorm",      hp: 520,  r: 82,  speed: 38, dmg: 2.5, pattern: "storm" },
-    voidEye:    { label: "공허의 눈", tex: "bossVoid",       hp: 820,  r: 88,  speed: 35, dmg: 2.8, pattern: "pull" },
-    abyssKing:  { label: "심연왕",    tex: "bossAbyssKing",  hp: 1320, r: 104, speed: 32, dmg: 3.2, pattern: "king" },
+    butcher:    { label: "도살자",    tex: "bossButcher",    hp: 205,  r: 76,  speed: 42, dmg: 2.2, pattern: "slam" },
+    stormGolem: { label: "폭풍 골렘", tex: "bossStorm",      hp: 410,  r: 82,  speed: 38, dmg: 2.5, pattern: "storm" },
+    voidEye:    { label: "공허의 눈", tex: "bossVoid",       hp: 650,  r: 88,  speed: 35, dmg: 2.8, pattern: "pull" },
+    abyssKing:  { label: "심연왕",    tex: "bossAbyssKing",  hp: 1040, r: 104, speed: 32, dmg: 3.2, pattern: "king" },
   };
 
   const WEAPONS = [
@@ -355,6 +501,8 @@ window.addEventListener("unhandledrejection", function(e) {
     activeBoss: null,
     lastMoveAngle: 0,
     joystick: new Phaser.Math.Vector2(0, 0),
+    playerTextureKey: "playerShip",
+    customPlayerPreview: "",
   };
 
   let player, enemies, bullets, orbs, keys, manager;
@@ -419,6 +567,95 @@ window.addEventListener("unhandledrejection", function(e) {
       ctx.fillStyle="#ffffff";
       ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
     });
+  }
+
+  function buildPixelAvatarDataUrl(img, pixelSize = 20, outputSize = 64) {
+    const srcCanvas = document.createElement("canvas");
+    srcCanvas.width = pixelSize;
+    srcCanvas.height = pixelSize;
+    const sctx = srcCanvas.getContext("2d", { willReadFrequently: true });
+    sctx.clearRect(0,0,pixelSize,pixelSize);
+    const iw = img.naturalWidth || img.width || pixelSize;
+    const ih = img.naturalHeight || img.height || pixelSize;
+    const side = Math.min(iw, ih);
+    const sx = (iw - side) / 2;
+    const sy = (ih - side) / 2;
+    sctx.imageSmoothingEnabled = true;
+    sctx.drawImage(img, sx, sy, side, side, 0, 0, pixelSize, pixelSize);
+
+    const data = sctx.getImageData(0,0,pixelSize,pixelSize);
+    for (let i = 0; i < data.data.length; i += 4) {
+      data.data[i] = Math.min(255, data.data[i] * 1.08);
+      data.data[i + 1] = Math.min(255, data.data[i + 1] * 1.04);
+      data.data[i + 2] = Math.min(255, data.data[i + 2] * 1.08);
+    }
+    sctx.putImageData(data, 0, 0);
+
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = outputSize;
+    outCanvas.height = outputSize;
+    const octx = outCanvas.getContext("2d");
+    octx.clearRect(0,0,outputSize,outputSize);
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(srcCanvas, 0, 0, outputSize, outputSize);
+    octx.strokeStyle = "rgba(0,255,213,0.65)";
+    octx.lineWidth = 2;
+    octx.strokeRect(1,1,outputSize-2,outputSize-2);
+    return outCanvas.toDataURL("image/png");
+  }
+
+  function updateAvatarPreviewDom() {
+    const preview = document.getElementById("avatarPreview");
+    const hint = document.getElementById("avatarHint");
+    if (!preview || !hint) return;
+    if (state.customPlayerPreview) {
+      preview.src = state.customPlayerPreview;
+      preview.classList.add("show");
+      hint.innerHTML = "적용 완료. START를 누르면 업로드한 사진의 픽셀 버전으로 플레이합니다.<br>좌우 이동에 따라 자동으로 방향 전환됩니다.";
+    } else {
+      preview.removeAttribute("src");
+      preview.classList.remove("show");
+      hint.textContent = "사진을 넣으면 중앙 기준으로 잘라서 자동 픽셀화하고, 그 이미지를 플레이어 캐릭터로 사용합니다.";
+    }
+  }
+
+  function applyCustomPlayerTexture(scene, dataUrl) {
+    if (!scene || !scene.textures || !dataUrl) return;
+    const key = "playerCustom";
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width || 64;
+      canvas.height = img.height || 64;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+      if (scene.textures.exists(key)) scene.textures.remove(key);
+      scene.textures.addCanvas(key, canvas);
+      state.playerTextureKey = key;
+      state.customPlayerPreview = dataUrl;
+      if (player && player.active) {
+        player.setTexture(key);
+        player.setDisplaySize(64,64);
+        player.rotation = 0;
+      }
+      updateAvatarPreviewDom();
+    };
+    img.src = dataUrl;
+  }
+
+  function resetCustomPlayerTexture(scene) {
+    state.playerTextureKey = "playerShip";
+    state.customPlayerPreview = "";
+    if (scene && scene.textures && scene.textures.exists("playerCustom")) scene.textures.remove("playerCustom");
+    if (player && player.active) {
+      player.setTexture("playerShip");
+      player.setDisplaySize(64,64);
+      player.setFlipX(false);
+      player.rotation = 0;
+    }
+    updateAvatarPreviewDom();
   }
 
 
@@ -924,7 +1161,7 @@ window.addEventListener("unhandledrejection", function(e) {
   }
 
   function makeBullet(scene, x, y, color, size) {
-    const b = scene.add.sprite(x, y, "bulletCore").setTint(color).setDisplaySize(size*2.5, size*2.5).setDepth(36);
+    const b = scene.add.sprite(x, y, "bulletCore").setTint(color).setDisplaySize(size*2.9, size*2.9).setAlpha(0.96).setDepth(36);
     scene.physics.add.existing(b);
     b.body.setCircle(size, -size/2, -size/2);
     b.radius = size;
@@ -969,34 +1206,141 @@ window.addEventListener("unhandledrejection", function(e) {
     });
   }
 
+  
   function beam(scene, angle, len, width, damage, color, opt={}) {
-    const sx=player.x, sy=player.y, ex=sx+Math.cos(angle)*len, ey=sy+Math.sin(angle)*len;
-    const outer = scene.add.rectangle((sx+ex)/2,(sy+ey)/2,len,width,color,.26).setRotation(angle).setDepth(55);
-    const core = scene.add.rectangle((sx+ex)/2,(sy+ey)/2,len,Math.max(5,width*.22),0xffffff,.78).setRotation(angle).setDepth(56);
-    scene.tweens.add({targets:[outer,core],alpha:0,scaleY:.2,duration:180,onComplete:()=>{outer.destroy(); core.destroy();}});
-    activeEnemies().forEach(e=>{
-      if (lineDist(e.x,e.y,sx,sy,ex,ey) < width*.8 + e.radius*.35) {
-        damageEnemy(scene,e,damage);
+    const sx = player.x, sy = player.y;
+    const ex = sx + Math.cos(angle) * len, ey = sy + Math.sin(angle) * len;
+    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
+
+    const glowWide = scene.add.rectangle(mx, my, len, width * 1.9, color, 0.12).setRotation(angle).setDepth(55);
+    const glowMid  = scene.add.rectangle(mx, my, len, width * 1.15, color, 0.22).setRotation(angle).setDepth(56);
+    const core     = scene.add.rectangle(mx, my, len, Math.max(6, width * 0.24), 0xffffff, 0.95).setRotation(angle).setDepth(57);
+
+    const startFlash = scene.add.circle(sx, sy, width * 0.9, color, 0.26).setDepth(58);
+    const endFlash   = scene.add.circle(ex, ey, width * 0.75, 0xffffff, 0.18).setDepth(58);
+
+    for (let i = 0; i < 11; i++) {
+      const t = i / 10;
+      const px = sx + (ex - sx) * t + Phaser.Math.Between(-8, 8);
+      const py = sy + (ey - sy) * t + Phaser.Math.Between(-8, 8);
+      const spark = scene.add.circle(px, py, Phaser.Math.Between(2, 5), color, 0.72).setDepth(59);
+      scene.tweens.add({
+        targets: spark,
+        alpha: 0,
+        scale: 0.2,
+        y: py + Phaser.Math.Between(-12, 12),
+        duration: 160 + Phaser.Math.Between(0, 120),
+        onComplete: () => spark.destroy(),
+      });
+    }
+
+    scene.tweens.add({
+      targets: [glowWide, glowMid, core, startFlash, endFlash],
+      alpha: 0,
+      scaleY: 0.24,
+      duration: 200,
+      onComplete: () => { glowWide.destroy(); glowMid.destroy(); core.destroy(); startFlash.destroy(); endFlash.destroy(); }
+    });
+
+    activeEnemies().forEach(e => {
+      if (lineDist(e.x, e.y, sx, sy, ex, ey) < width * 0.9 + e.radius * 0.42) {
+        damageEnemy(scene, e, damage);
         if (opt.ice && e.active) {
           slow(e, scene.time.now, 2300, .38);
-          if (Math.random() < .25) freeze(e, scene.time.now, 620);
+          if (Math.random() < .28) freeze(e, scene.time.now, 650);
         }
       }
     });
   }
 
+
+  
   function slash(scene, x, y, angle, radius, color) {
-    const arc = scene.add.arc(x,y,radius,-105,105,false,color,.14).setStrokeStyle(13,color,.85).setRotation(angle).setDepth(54);
-    const bladeIcon = scene.add.sprite(x + Math.cos(angle)*radius*.58, y + Math.sin(angle)*radius*.58, "assetBlade").setDisplaySize(46,46).setRotation(angle + Math.PI/2).setDepth(55);
-    scene.tweens.add({targets:[arc,bladeIcon],alpha:0,scale:1.18,duration:190,onComplete:()=>{arc.destroy(); bladeIcon.destroy();}});
-    scene.cameras.main.shake(60,.002);
+    const arcBack = scene.add.arc(x, y, radius * 1.04, -115, 115, false, color, 0.08)
+      .setStrokeStyle(22, color, 0.25).setRotation(angle).setDepth(54);
+    const arcMain = scene.add.arc(x, y, radius, -105, 105, false, color, 0.14)
+      .setStrokeStyle(12, color, 0.95).setRotation(angle).setDepth(55);
+    const arcCore = scene.add.arc(x, y, radius * 0.98, -100, 100, false, 0xffffff, 0.0)
+      .setStrokeStyle(4, 0xffffff, 0.88).setRotation(angle).setDepth(56);
+
+    const bladeIcon = scene.add.sprite(
+      x + Math.cos(angle) * radius * 0.62,
+      y + Math.sin(angle) * radius * 0.62,
+      "assetBlade"
+    ).setDisplaySize(58, 58).setRotation(angle + Math.PI / 2).setDepth(57);
+
+    const slashGlow = scene.add.circle(
+      x + Math.cos(angle) * radius * 0.48,
+      y + Math.sin(angle) * radius * 0.48,
+      radius * 0.24,
+      color,
+      0.12
+    ).setDepth(54);
+
+    scene.tweens.add({
+      targets: [arcBack, arcMain, arcCore, bladeIcon, slashGlow],
+      alpha: 0,
+      scale: 1.22,
+      duration: 220,
+      ease: "Cubic.easeOut",
+      onComplete: () => { arcBack.destroy(); arcMain.destroy(); arcCore.destroy(); bladeIcon.destroy(); slashGlow.destroy(); }
+    });
+
+    scene.cameras.main.shake(90, .0032);
   }
 
+
+  
   function lightning(scene, x, y) {
-    const l = scene.add.line(0,0,x+Phaser.Math.Between(-14,14),y-330,x,y,0x66d9ff,.95).setOrigin(0).setLineWidth(4).setDepth(65);
-    const f = scene.add.circle(x,y,58,0x66d9ff,.18).setDepth(64);
-    scene.tweens.add({targets:[l,f],alpha:0,scale:1.4,duration:160,onComplete:()=>{l.destroy(); f.destroy();}});
+    const topY = y - Phaser.Math.Between(280, 380);
+    const points = [];
+    const segments = 9;
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      points.push({
+        x: x + (i === 0 || i === segments ? 0 : Phaser.Math.Between(-26, 26)),
+        y: topY + (y - topY) * t
+      });
+    }
+
+    const glow = scene.add.graphics().setDepth(65);
+    const core = scene.add.graphics().setDepth(66);
+
+    const draw = (g, width, c, a) => {
+      g.lineStyle(width, c, a);
+      g.beginPath();
+      g.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) g.lineTo(points[i].x, points[i].y);
+      g.strokePath();
+    };
+
+    draw(glow, 18, 0x66d9ff, 0.18);
+    draw(core, 5, 0xeaffff, 0.96);
+
+    for (let i = 2; i < points.length - 1; i += 2) {
+      const p = points[i];
+      const g = scene.add.graphics().setDepth(66);
+      const bx = p.x + Phaser.Math.Between(-56, 56);
+      const by = p.y + Phaser.Math.Between(24, 70);
+      g.lineStyle(2, 0xcff7ff, 0.82);
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      g.lineTo((p.x + bx) / 2 + Phaser.Math.Between(-12, 12), (p.y + by) / 2);
+      g.lineTo(bx, by);
+      g.strokePath();
+      scene.tweens.add({ targets: g, alpha: 0, duration: 130, onComplete: () => g.destroy() });
+    }
+
+    const impactGlow = scene.add.circle(x, y, 62, 0x66d9ff, 0.22).setDepth(64);
+    const impactCore = scene.add.circle(x, y, 24, 0xffffff, 0.55).setDepth(67);
+    const impactRing = scene.add.circle(x, y, 24, 0xffffff, 0).setStrokeStyle(4, 0xcff7ff, 0.95).setDepth(67);
+
+    scene.tweens.add({ targets: [glow, core], alpha: 0, duration: 150, onComplete: () => { glow.destroy(); core.destroy(); } });
+    scene.tweens.add({ targets: impactGlow, alpha: 0, scale: 1.7, duration: 220, onComplete: () => impactGlow.destroy() });
+    scene.tweens.add({ targets: impactCore, alpha: 0, scale: 2.1, duration: 180, onComplete: () => impactCore.destroy() });
+    scene.tweens.add({ targets: impactRing, alpha: 0, scale: 2.2, duration: 260, onComplete: () => impactRing.destroy() });
   }
+
 
   function gravity(scene, x, y, radius, duration, damage) {
     const core = scene.add.circle(x,y,30,0x020006,1).setStrokeStyle(5,0xa06bff,.9).setDepth(61);
@@ -1020,18 +1364,65 @@ window.addEventListener("unhandledrejection", function(e) {
     }});
   }
 
-  function explosion(scene,x,y,radius,damage,opt={}) {
-    const boom = scene.add.circle(x,y,radius,opt.fire?0xff5522:0xff8844,.13).setStrokeStyle(4,opt.fire?0xffcc55:0xffddaa,.72).setDepth(58);
-    scene.tweens.add({targets:boom,alpha:0,scale:1.35,duration:280,onComplete:()=>boom.destroy()});
-    enemiesInRange(x,y,radius).forEach(e=>{
-      damageEnemy(scene,e,damage);
+  
+  function explosion(scene, x, y, radius, damage, opt={}) {
+    const baseColor = opt.fire ? 0xff5522 : 0xff8844;
+    const warmColor = opt.fire ? 0xffdd66 : 0xfff0cc;
+
+    const outer = scene.add.circle(x, y, radius, baseColor, 0.10).setStrokeStyle(6, warmColor, 0.55).setDepth(58);
+    const inner = scene.add.circle(x, y, radius * 0.62, warmColor, 0.20).setDepth(59);
+    const shock = scene.add.circle(x, y, radius * 0.2, 0xffffff, 0.08).setStrokeStyle(3, 0xffffff, 0.9).setDepth(60);
+
+    for (let i = 0; i < 18; i++) {
+      const ang = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      const dist = Phaser.Math.FloatBetween(radius * 0.2, radius * 0.95);
+      const p = scene.add.circle(x + Math.cos(ang) * dist, y + Math.sin(ang) * dist, Phaser.Math.Between(2, 6), warmColor, 0.85).setDepth(61);
+      scene.tweens.add({
+        targets: p,
+        x: p.x + Math.cos(ang) * Phaser.Math.Between(18, 54),
+        y: p.y + Math.sin(ang) * Phaser.Math.Between(18, 54),
+        alpha: 0,
+        scale: 0.2,
+        duration: 220 + Phaser.Math.Between(0, 140),
+        onComplete: () => p.destroy()
+      });
+    }
+
+    scene.tweens.add({
+      targets: outer,
+      alpha: 0,
+      scale: 1.38,
+      duration: 300,
+      ease: "Cubic.easeOut",
+      onComplete: () => outer.destroy()
+    });
+    scene.tweens.add({
+      targets: inner,
+      alpha: 0,
+      scale: 1.65,
+      duration: 240,
+      ease: "Cubic.easeOut",
+      onComplete: () => inner.destroy()
+    });
+    scene.tweens.add({
+      targets: shock,
+      alpha: 0,
+      scale: 2.3,
+      duration: 260,
+      onComplete: () => shock.destroy()
+    });
+
+    enemiesInRange(x, y, radius).forEach(e => {
+      damageEnemy(scene, e, damage);
       if (opt.fire && e.active) {
-        e.burnUntil = Math.max(e.burnUntil||0, scene.time.now + 1400);
-        e.burnDmg = Math.max(e.burnDmg||0, damage*.08);
+        e.burnUntil = Math.max(e.burnUntil || 0, scene.time.now + 1600);
+        e.burnDmg = Math.max(e.burnDmg || 0, damage * 0.08);
       }
     });
-    scene.cameras.main.shake(80, .003);
+
+    scene.cameras.main.shake(120, .0045);
   }
+
 
   function placeMine(scene,x,y,color) {
     const c = scene.add.container(x,y).setDepth(27);
@@ -1054,20 +1445,43 @@ window.addEventListener("unhandledrejection", function(e) {
     if (m.chain) enemiesInRange(x,y,m.radius*1.6,4).forEach((e,i)=>scene.time.delayedCall(i*75,()=>e.active&&explosion(scene,e.x,e.y,m.radius*.45,m.damage*.35)));
   }
 
-  function chain(scene,x1,y1,x2,y2,color) {
-    const l = scene.add.line(0,0,x1,y1,x2,y2,color,.7).setOrigin(0).setLineWidth(3).setDepth(53);
-    scene.tweens.add({targets:l,alpha:0,duration:170,onComplete:()=>l.destroy()});
+  
+  function chain(scene, x1, y1, x2, y2, color) {
+    const back = scene.add.line(0, 0, x1, y1, x2, y2, color, 0.16).setOrigin(0).setLineWidth(10).setDepth(53);
+    const mid  = scene.add.line(0, 0, x1, y1, x2, y2, color, 0.35).setOrigin(0).setLineWidth(5).setDepth(54);
+    const core = scene.add.line(0, 0, x1, y1, x2, y2, 0xffffff, 0.95).setOrigin(0).setLineWidth(2).setDepth(55);
+    scene.tweens.add({ targets: [back, mid, core], alpha: 0, duration: 190, onComplete: () => { back.destroy(); mid.destroy(); core.destroy(); } });
   }
 
-  function ring(scene,x,y,r,color) {
-    const rr = scene.add.circle(x,y,r,color,.18).setStrokeStyle(2,0xffffff,.6).setDepth(57);
-    scene.tweens.add({targets:rr,alpha:0,scale:1.7,duration:170,onComplete:()=>rr.destroy()});
+
+  
+  function ring(scene, x, y, r, color) {
+    const rr = scene.add.circle(x, y, r, color, 0.08).setStrokeStyle(3, 0xffffff, 0.72).setDepth(57);
+    const glow = scene.add.circle(x, y, r * 0.72, color, 0.12).setDepth(56);
+    scene.tweens.add({
+      targets: [rr, glow],
+      alpha: 0,
+      scale: 1.9,
+      duration: 220,
+      ease: "Cubic.easeOut",
+      onComplete: () => { rr.destroy(); glow.destroy(); }
+    });
   }
 
-  function trail(scene,x,y,color,size) {
-    const t = scene.add.circle(x,y,size,color,.18).setDepth(23);
-    scene.tweens.add({targets:t,alpha:0,scale:.25,duration:210,onComplete:()=>t.destroy()});
+
+  
+  function trail(scene, x, y, color, size) {
+    const t = scene.add.circle(x, y, size, color, 0.18).setDepth(23);
+    const core = scene.add.circle(x, y, Math.max(1, size * 0.38), 0xffffff, 0.45).setDepth(24);
+    scene.tweens.add({
+      targets: [t, core],
+      alpha: 0,
+      scale: 0.18,
+      duration: 190,
+      onComplete: () => { t.destroy(); core.destroy(); }
+    });
   }
+
 
   function iceBurst(scene,x,y,r,damage) {
     const b = scene.add.circle(x,y,r,0x9be7ff,.12).setStrokeStyle(4,0xcff6ff,.78).setDepth(59);
@@ -1161,15 +1575,16 @@ window.addEventListener("unhandledrejection", function(e) {
     pool.forEach(id=>{
       const t = ENEMIES[id];
       let w = t.weight;
-      if (state.elapsed < 140 && ["charger","shocker","voidling","brute"].includes(id)) w *= .3;
-      if (state.elapsed > 420 && ["charger","voidling","brute"].includes(id)) w *= 1.4;
+      if (state.elapsed < 120 && ["charger","shocker","voidling","brute"].includes(id)) w *= state.diff.spawn >= 2 ? .65 : .42;
+      if (state.elapsed > 240 && ["charger","voidling","brute"].includes(id)) w *= 1.75;
+      if (state.diff.spawn >= 2.5 && ["runner","charger","shocker"].includes(id)) w *= 1.45;
       for (let i=0;i<Math.max(1,Math.round(w));i++) weighted.push(id);
     });
     return Phaser.Utils.Array.GetRandom(weighted);
   }
 
   function spawnEnemy(scene, id=null, x=null, y=null, opt={}) {
-    if (enemies.children.size >= state.diff.cap) return null;
+    if (activeEnemies().length >= state.diff.cap) return null;
 
     const boss = opt.boss ? BOSSES[opt.boss] : null;
     const def = boss || ENEMIES[id || pickEnemyType()];
@@ -1424,18 +1839,19 @@ window.addEventListener("unhandledrejection", function(e) {
   }
 
   function spawnLoop(scene, delta) {
-    const pressure = 1 + Math.min(1.15,state.elapsed/600);
-    const every = Math.max(75, 450/(state.diff.spawn*state.stage.spawn*pressure));
+    const pressure = 1 + Math.min(1.75, state.elapsed / 430);
+    const burstPressure = state.elapsed > 180 ? 1.18 : 1.0;
+    const every = Math.max(42, 340 / (state.diff.spawn * state.stage.spawn * pressure * burstPressure));
     state.spawnAcc += delta;
     if (state.spawnAcc >= every) {
       state.spawnAcc = 0;
-      const count = Math.min(10, 1 + Math.floor(state.elapsed/110));
-      for (let i=0;i<count;i++) spawnEnemy(scene);
+      const count = Math.min(22, 2 + Math.floor(state.elapsed / 65) + Math.floor(state.stageIndex * 1.5));
+      for (let i = 0; i < count; i++) spawnEnemy(scene);
     }
-    if (state.elapsed>0 && state.elapsed%60===0 && scene.minuteWarn !== state.elapsed) {
+    if (state.elapsed>0 && state.elapsed%45===0 && scene.minuteWarn !== state.elapsed) {
       scene.minuteWarn = state.elapsed;
       centerText(scene,"HORDE INCOMING","#ff4455");
-      scene.time.delayedCall(900,()=>{for(let i=0;i<18+state.stageIndex*6;i++) spawnEnemy(scene,null,null,null,{close:true});});
+      scene.time.delayedCall(900,()=>{for(let i=0;i<32+state.stageIndex*12;i++) spawnEnemy(scene,null,null,null,{close:true});});
     }
   }
 
@@ -1458,10 +1874,13 @@ window.addEventListener("unhandledrejection", function(e) {
   }
 
   function createPlayer(scene) {
-    player = scene.add.sprite(0,0,"playerShip").setDisplaySize(64,64).setDepth(40);
+    player = scene.add.sprite(0,0,(state.playerTextureKey || "playerShip")).setDisplaySize(64,64).setDepth(40);
     scene.physics.add.existing(player);
     player.body.setCircle(22, player.width/2-22, player.height/2-22);
-    player.setDamping(true);
+    // FIX V6: Phaser Sprite에는 setDamping()이 없다. 잘못 호출하면 시작 화면에서 멈춘다.
+    if (player.body && typeof player.body.setDamping === "function") {
+      player.body.setDamping(true);
+    }
   }
 
   function movePlayer(scene) {
@@ -1474,10 +1893,19 @@ window.addEventListener("unhandledrejection", function(e) {
     if (v.lengthSq() > 0) {
       v.normalize();
       state.lastMoveAngle = Math.atan2(v.y,v.x);
-      player.rotation = Phaser.Math.Angle.RotateTo(player.rotation,state.lastMoveAngle,.18);
+      if (state.playerTextureKey === "playerCustom") {
+        player.rotation = 0;
+        player.setFlipX(v.x < -0.08);
+      } else {
+        player.setFlipX(false);
+        player.rotation = Phaser.Math.Angle.RotateTo(player.rotation,state.lastMoveAngle,.18);
+      }
       player.body.setVelocity(v.x*245,v.y*245);
       if (Math.random()<.35) trail(scene,player.x-Math.cos(state.lastMoveAngle)*26,player.y-Math.sin(state.lastMoveAngle)*26,0x00ffd5,10);
-    } else player.body.setVelocity(0,0);
+    } else {
+      player.body.setVelocity(0,0);
+      if (state.playerTextureKey === "playerCustom") player.rotation = 0;
+    }
   }
 
   function createBackground(scene) {
@@ -1555,8 +1983,7 @@ window.addEventListener("unhandledrejection", function(e) {
 
     scene.input.on("pointerdown", p => {
       if (state.choosing || state.dead) return;
-      // 고정 왼쪽 조이스틱 제거: 손가락을 댄 위치가 바로 조이스틱 중심이 된다.
-      if (p.y < 72) return;
+      // FIX V6: 화면 어디를 터치하든 그 위치가 조이스틱 중심이 된다.
       activeTouchId = p.id;
       baseX = p.x;
       baseY = p.y;
@@ -1585,6 +2012,10 @@ window.addEventListener("unhandledrejection", function(e) {
     scene.input.on("pointerout", p => {
       if (p.id === activeTouchId) resetStick();
     });
+
+    scene.input.on("pointercancel", p => {
+      if (p.id === activeTouchId) resetStick();
+    });
   }
 
   function fmt(sec) {
@@ -1611,6 +2042,32 @@ window.addEventListener("unhandledrejection", function(e) {
       });
       grid.appendChild(btn);
     });
+
+    const fileInput = document.getElementById("playerPhotoInput");
+    const resetBtn = document.getElementById("avatarResetButton");
+    if (fileInput && !fileInput.dataset.bound) {
+      fileInput.dataset.bound = "1";
+      fileInput.addEventListener("change", (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const dataUrl = buildPixelAvatarDataUrl(img, 20, 64);
+            applyCustomPlayerTexture(scene, dataUrl);
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    if (resetBtn && !resetBtn.dataset.bound) {
+      resetBtn.dataset.bound = "1";
+      resetBtn.addEventListener("click", () => resetCustomPlayerTexture(scene));
+    }
+
+    updateAvatarPreviewDom();
     document.getElementById("startButton").onclick = () => {
       layer.style.display="none";
       startRun(scene);
@@ -1629,7 +2086,7 @@ window.addEventListener("unhandledrejection", function(e) {
     state.exp=0;
     state.need=7;
     state.kills=0;
-    state.baseEnemyHp=Math.max(4,Math.round(4*state.diff.hp));
+    state.baseEnemyHp=Math.max(4,Math.round(4.2*state.diff.hp));
     state.stage=STAGES[0];
     state.stageIndex=0;
     state.spawnAcc=0;
@@ -1707,7 +2164,7 @@ window.addEventListener("unhandledrejection", function(e) {
     physics: { default: "arcade", arcade: { gravity: { y: 0 }, debug: false } },
     scene: [MainScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    render: { antialias: false, pixelArt: true },
+    render: { antialias: true, pixelArt: false, roundPixels: false },
   };
 
   new Phaser.Game(config);
